@@ -1,0 +1,9 @@
+outputs/
+scripts/
+data/cache/
+data/*.csv
+
+.DS_Store
+__pycache__/
+*.py[cod]
+*$py.class

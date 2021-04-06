@@ -1,0 +1,66 @@
+{
+	"recover_username": ["pull-up-account", "verify-identity"],
+	"recover_password": ["pull-up-account", "enter-details", "make-password"],
+	"reset_2fa": ["pull-up-account", "enter-details", "send-link"],
+
+	"status_service_added": ["pull-up-account", "record-reason", "ask-the-oracle", "update-account", "offer-refund"],
+	"status_service_removed": ["pull-up-account", "record-reason", "ask-the-oracle", "update-account"],
+	"status_shipping_question": ["pull-up-account", "ask-the-oracle", "send-link"],
+	"status_credit_missing": ["pull-up-account", "record-reason", "ask-the-oracle", "promo-code"],
+	"manage_change_address": ["pull-up-account", "record-reason", "verify-identity", "update-account"],
+	"manage_change_name": ["pull-up-account", "record-reason", "verify-identity", "update-account"],
+	"manage_change_phone": ["pull-up-account", "record-reason", "verify-identity", "update-account"],
+	"manage_payment_method": ["pull-up-account", "record-reason", "verify-identity", "update-account"],
+
+	"status_mystery_fee": ["pull-up-account", "verify-identity", "ask-the-oracle", "membership", "update-order"],
+	"status_delivery_time": ["pull-up-account", "verify-identity", "ask-the-oracle", "shipping-status", "update-order"],
+	"status_payment_method": ["pull-up-account", "verify-identity", "shipping-status", "update-order"],
+	"status_quantity": ["pull-up-account", "verify-identity", "ask-the-oracle", "shipping-status", "offer-refund"],
+	"manage_upgrade": ["pull-up-account", "verify-identity", "shipping-status", "membership", "update-order"],
+	"manage_downgrade": ["pull-up-account", "verify-identity", "shipping-status", "membership", "update-order"],
+	"manage_create": ["pull-up-account", "verify-identity", "shipping-status", "membership", "make-purchase"],
+	"manage_cancel": ["pull-up-account", "verify-identity", "shipping-status", "membership", "offer-refund"],
+
+	"refund_initiate": ["pull-up-account", "validate-purchase", "record-reason", "enter-details", "offer-refund"],
+	"refund_update": ["pull-up-account", "validate-purchase", "record-reason", "offer-refund"],
+	"refund_status": ["pull-up-account", "validate-purchase", "notify-team", "update-order"],
+	"return_stain": ["pull-up-account", "validate-purchase", "membership", "enter-details", "update-order"],
+	"return_color": ["pull-up-account", "validate-purchase", "membership", "enter-details", "update-order"],
+	"return_size": ["pull-up-account", "validate-purchase", "membership", "enter-details", "update-order"],
+
+	"bad_price_competitor": ["pull-up-account", "record-reason", "verify-identity", "promo-code"],
+	"bad_price_yesterday": ["pull-up-account", "record-reason", "verify-identity", "promo-code"],
+	"out_of_stock_general": ["pull-up-account", "notify-team", "promo-code"],
+	"out_of_stock_one_item": ["pull-up-account", "record-reason", "notify-team", "make-purchase"],
+	"promo_code_invalid": ["pull-up-account", "ask-the-oracle", "membership", "promo-code"],
+	"promo_code_out_of_date": ["pull-up-account", "ask-the-oracle", "membership", "promo-code"],
+	"mistimed_billing_already_returned": ["pull-up-account", "validate-purchase", "record-reason", "membership", "update-order"],
+	"mistimed_billing_never_bought": ["pull-up-account", "validate-purchase", "ask-the-oracle", "membership", "update-order"],
+
+	"status": ["pull-up-account", "verify-identity", "validate-purchase", "ask-the-oracle", "update-order"],
+	"manage": ["pull-up-account", "shipping-status", "validate-purchase", "update-order"],
+	"missing": ["pull-up-account", "validate-purchase", "record-reason", "update-order", "make-purchase"],
+	"cost": ["pull-up-account", "validate-purchase", "shipping-status", "update-order", "offer-refund"],
+
+	"boots": ["search-faq", "search-boots", "select-faq"],
+	"shirt": ["search-faq", "search-shirt", "select-faq"],
+	"jeans": ["search-faq", "search-jeans", "select-faq"],
+	"jacket": ["search-faq", "search-jacket", "select-faq"],
+
+	"pricing": ["search-faq", "search-pricing", "select-faq"],
+	"membership": ["search-faq", "search-membership", "select-faq"],
+	"timing": ["search-faq", "search-timing", "select-faq"],
+	"policy": ["search-faq", "search-policy", "select-faq"],
+
+	"status_active": ["pull-up-account", "verify-identity", "subscription-status", "send-link", "enter-details"],
+	"status_due_amount": ["pull-up-account", "verify-identity", "subscription-status", "send-link", "enter-details"],
+	"status_due_date": ["pull-up-account", "verify-identity", "subscription-status", "send-link", "enter-details"],
+	"manage_pay_bill": ["pull-up-account", "verify-identity", "subscription-status", "enter-details", "update-account"],
+	"manage_extension": ["pull-up-account", "verify-identity", "membership", "update-account", "enter-details"],
+	"manage_dispute_bill": ["pull-up-account", "verify-identity", "membership", "ask-the-oracle", "offer-refund"],
+
+	"credit_card": ["try-again", "log-out-in", "enter-details", "make-purchase"],
+	"shopping_cart": ["try-again", "log-out-in", "enter-details", "make-purchase"],
+	"search_results": ["try-again", "log-out-in", "make-purchase", "instructions", "notify-team"],
+	"slow_speed": ["try-again", "log-out-in", "make-purchase", "instructions", "notify-team"]
+}

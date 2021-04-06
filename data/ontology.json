@@ -1,0 +1,107 @@
+{
+	"intents": {
+		"flows": ["account_access", "manage_account", "order_issue", "product_defect",
+				"purchase_dispute", "shipping_issue", "single_item_query",
+				"storewide_query", "subscription_inquiry", "troubleshoot_site"],
+		"subflows": {
+			"account_access": ["recover_username", "recover_password", "reset_2fa"],
+			"manage_account": ["status_service_added", "status_service_removed", "status_shipping_question", "status_credit_missing",
+				"manage_change_address", "manage_change_name", "manage_change_phone", "manage_payment_method"],
+			"order_issue": ["status_mystery_fee", "status_delivery_time", "status_payment_method", "status_quantity",
+				"manage_upgrade", "manage_downgrade", "manage_create", "manage_cancel"],
+			"product_defect": ["refund_initiate", "refund_update", "refund_status",
+				"return_stain", "return_color", "return_size"],
+			"purchase_dispute": ["bad_price_competitor", "bad_price_yesterday",
+				"out_of_stock_general", "out_of_stock_one_item",
+				"promo_code_invalid", "promo_code_out_of_date",
+				"mistimed_billing_already_returned", "mistimed_billing_never_bought"],
+			"shipping_issue": ["status", "manage", "missing", "cost"],
+			"single_item_query": ["boots", "shirt", "jeans", "jacket"],
+			"storewide_query": ["pricing", "membership", "timing", "policy"],
+			"subscription_inquiry": ["status_active", "status_due_amount", "status_due_date",
+				"manage_pay_bill", "manage_extension", "manage_dispute_bill"],
+			"troubleshoot_site": ["credit_card", "shopping_cart", "search_results", "slow_speed"]
+		}
+	},
+	"vocabulary": {
+		"tokens": [],
+		"special": ["[CLS]", "[SEP]", "[UNK]", "[AGENT]", "[CUSTOMER]", "[ACTION]"]
+	},
+	"actions": {
+		"kb_query": {
+			"verify-identity": ["customer_name", "account_id", "order_id", "zip_code"],
+			"ask-the-oracle": [],
+			"validate-purchase": ["username", "email", "order_id"],
+			"make-password": [],
+			"promo-code": [],
+			"subscription-status": []
+		},
+		"interaction": {
+			"offer-refund": ["amount"],
+			"make-purchase": ["product"],
+			"record-reason": ["reason_slotval", "product", "street_address", "customer_name",
+				"payment_method", "phone", "refund_target"],
+			"enter-details": ["details_slotval", "full_address", "account_id", "username",
+				"email", "pin_number", "security_answer"],
+			"shipping-status": ["shipping_option"],
+			"update-order": ["order_slotval", "change_option", "amount", "payment_method", "full_address"],
+			"pull-up-account": ["customer_name", "account_id"],
+			"update-account": ["account_slotval", "street_address", "customer_name", "payment_method", "phone"],
+			"send-link": [],
+			"notify-team": ["company_team"]
+		},
+		"faq_policy": {
+			"membership": ["membership_level"],
+			"search-faq": [],
+			"try-again": [],
+			"log-out-in": [],
+			"instructions": [],
+			"search-jeans": [],
+			"search-shirt": [],
+			"search-boots": [],
+			"search-jacket": [],
+			"search-pricing": [],
+			"search-timing": [],
+			"search-membership": [],
+			"search-policy": [],
+			"select-faq": ["single_item_query", "storewide_query"]
+		}
+	}, "values": {
+		"enumerable": {
+			"account_slotval": ["add service", "extend subscription", "remove service", "renew subscription"],
+			"company_team": ["manager", "website team", "purchasing department"],
+			"customer_name": ["Alessandro Phoenix", "Joyce Wu", "Albert Sanders", "David Williams", "Sanya Afzal",
+				"Crystal Minh", "Chloe Zhang", "Rodriguez Domingo", "Joseph Banter", "Norman Bouchard"],
+			"details_slotval": ["troubleshoot"],
+			"membership_level": ["guest", "bronze", "silver", "gold"],
+			"change_option": ["change address", "change date", "change item", "change method",
+				"change order", "change price", "change time"],
+			"order_slotval": ["give credit", "tomorrow", "next week", "cancel shipment",
+				"by mail", "in store", "drop off center"],
+			"payment_method": ["credit card", "debit card", "paypal"],
+			"product": ["calvin klein boots", "calvin klein jacket", "calvin klein jeans", "calvin klein shirt",
+				"guess boots", "guess jacket", "guess jeans", "guess shirt",
+				"michael kors boots", "michael kors jacket", "michael kors jeans", "michael kors shirt",
+				"tommy hilfiger boots", "tommy hilfiger jacket", "tommy hilfiger jeans", "tommy hilfiger shirt"],
+			"refund_target": ["add value", "credit card", "gift card", "paper check"],
+			"reason_slotval": ["subscription refund", "previous purchase", "promotional package",
+				"email", "spouse", "news", "competitor", "yesterday", "9 days", "5 days"],
+			"security_answer": ["Alexander", "Martinez", "Livingston", "Singh", "Ahmed"],
+			"shipping_option": ["delivered", "in transit", "order received", "out for delivery"],
+			"single_item_query": ["boots_how_1", "boots_how_2", "boots_how_3", "boots_how_4", "boots_other_1", "boots_other_2", "boots_other_3", "boots_other_4",
+				"jacket_how_1", "jacket_how_2", "jacket_how_3", "jacket_how_4", "jacket_other_1", "jacket_other_2", "jacket_other_3", "jacket_other_4",
+				"jeans_how_1", "jeans_how_2", "jeans_how_3", "jeans_how_4", "jeans_other_1", "jeans_other_2", "jeans_other_3", "jeans_other_4",
+				"shirt_how_1", "shirt_how_2", "shirt_how_3", "shirt_how_4", "shirt_other_1", "shirt_other_2", "shirt_other_3", "shirt_other_4"],
+			"storewide_query": ["membership_1", "membership_2", "membership_3", "membership_4",
+				"policy_1", "policy_2", "policy_3", "policy_4",
+				"pricing_1", "pricing_2", "pricing_3", "pricing_4",
+				"timing_1", "timing_2", "timing_3", "timing_4"]
+		}, 
+		"non_enumerable": {
+			"product": ["amount", "name"],
+			"personal": ["account_id", "email", "phone", "pin_number", "username"],
+			"order": ["full_address", "order_id", "street_address", "zip_code"]
+		}
+	},
+	"next_steps": ["retrieve_utterance", "take_action", "end_conversation"]
+}
