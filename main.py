@@ -3,42 +3,71 @@ import random
 import numpy as np
 import torch
 from tqdm import tqdm as progress_bar
-from torch.utils.data import RandomSampler, SequentialSampler
-from torch.utils.data import DataLoader as DataSampler
 
 from utils.arguments import solicit_params
 from utils.help import set_seed, setup_gpus, check_directories, prepare_inputs, device
-from utils.load import load_data, load_tokenizer
-from utils.process import process_data
+from utils.load import load_data, load_tokenizer, load_candidates, get_optimizer, get_scheduler
+from utils.process import process_data, setup_dataloader
 from utils.evaluate import quantify, qualify
 
 from components.datasets import ActionDataset, CascadeDataset
-from components.tools import ExperienceLogger, RAdamOptimizer
+from components.tools import ExperienceLogger
 from components.models import ActionStateTracking, CascadeDialogSuccess
 
-def run_main(args, dataset, model, exp_logger):
-  """ if dataset.chunk_count['train'] > 1: exp_logger.init_tb_writers()
-    run_secondary(args, dataset, model, exp_logger)"""
+def run_main(args, datasets, model, exp_logger):
   if args.task == 'cds':
-    model.add_candidate_tooling(dataset)
+    utt_data = load_candidates(args)
+    model.add_candidate_data(*utt_data)
   kb_labels = {'intent': dataset.intent_labels, 'action': dataset.action_labels} if args.use_kb else {}
-
-  if args.do_train:
-    exp_logger.init_tb_writers()
-    run_train(args, dataset, model, exp_logger, kb_labels)
+  exp_logger.init_tb_writers()
+  run_train(args, datasets, model, exp_logger, kb_labels)
 
   if args.do_eval:
-    result = run_eval(args, dataset, model, exp_logger, kb_labels, split='test')
+    result = run_eval(args, datasets['test'], model, exp_logger, kb_labels, split='test')
     results = dict((k + f'_{args.filename}', v) for k, v in result.items())
     print(results)
 
-def run_train(args, dataset, model, exp_logger, kb_labels):
-  train_dataset = dataset.train
-  train_sampler = RandomSampler(train_dataset)
-  train_dataloader = DataSampler(train_dataset, sampler=train_sampler, batch_size=args.batch_size)
+def ast_loss(scores, targets, loss_func):
+  action_score, value_score = scores
+  action_target, value_target = targets
 
-  t_total = len(train_dataloader) // args.grad_accum_steps * args.epochs    
-  exp_logger.start_train(num_examples=len(train_dataset), total_step=t_total)
+  action_loss = loss_func(action_score, action_target)
+  value_loss = loss_func(value_score, value_target)
+
+  total_loss = action_loss + value_loss
+  return total_loss
+
+def cds_loss(scores, targets, loss_func):
+  intent_scores, nextstep_scores, action_scores, value_scores, utt_scores = scores
+  intent_target, nextstep_target, action_target, value_target, utt_target = targets
+  
+  utterance_mask = nextstep_target == 0  # 0 is the index of 'retrieve_utterance'
+  batch_size, num_candidates = utt_scores.shape
+  utt_scores = utt_scores * utterance_mask.unsqueeze(1).repeat(1, num_candidates)
+  utterance_target = utt_target * utterance_mask
+
+  intent_loss   = loss_func(intent_scores, intent_target)
+  nextstep_loss = loss_func(nextstep_scores, nextstep_target)
+  action_loss   = loss_func(action_scores, action_target)
+  value_loss    = loss_func(value_scores, value_target)
+  
+  utt_target_ids = utterance_target.unsqueeze(1)   # batch_size, 1
+  chosen = torch.gather(utt_scores, dim=1, index=utt_target_ids)
+  correct = chosen.sum()                   # scalar
+
+  shift = torch.max(utt_scores)             # perform log sum exp of the incorrect scores
+  res = torch.exp(utt_scores - shift)       # batch_size, num_candidates
+  res = torch.log(torch.sum(res, dim=1))   # batch_size
+  incorrect = torch.sum(shift + res)       # add the shift back in to complete the log-sum-exp overflow trick
+  utt_loss = incorrect - correct
+
+  total_loss = intent_loss + nextstep_loss + action_loss + value_loss + utt_loss
+  return total_loss
+
+def run_train(args, datasets, model, exp_logger, kb_labels):
+  dataloader, num_examples = setup_dataloader(datasets, args.batch_size, split='train')
+  t_total = len(dataloader) // args.grad_accum_steps * args.epochs    
+  exp_logger.start_train(num_examples, total_step=t_total)
   optimizer = get_optimizer(args, model)
   scheduler = get_scheduler(args, optimizer, t_total)
   model.zero_grad()
@@ -46,30 +75,23 @@ def run_train(args, dataset, model, exp_logger, kb_labels):
   for epoch in range(args.epochs):
     model.train()
 
-    for step, batch in enumerate(train_dataloader):
+    for step, batch in enumerate(dataloader):
       batch = tuple(t.to(device) for t in batch)
+      loss_func = torch.nn.CrossEntropyLoss(ignore_index=-1)
 
       if args.task == 'ast':
-        full_history, targets, context_tokens = prepare_inputs(batch, args.task, args.cascade)
+        full_history, targets, context_tokens, _ = prepare_inputs(args, batch)
         scores = model(full_history, context_tokens)
-        loss_func = get_loss(args.task)
-        loss = loss_func(scores, targets)
+        loss = ast_loss(scores, targets, loss_func)
       elif args.task == 'cds':
-        full_history, targets, context_tokens, candidates, masks = prepare_inputs(batch, args.task, args.cascade)
-        scores = model(full_history, context_tokens, candidates)
-        loss_func = get_loss(args.task)
-        loss = loss_func(scores, targets, masks)
-      # elif args.task == 'tcwi':
-      # full_history, targets, context_tokens, candidates, masks = prepare_inputs(batch, args.task, args.cascade)
-      # scores = model(full_history, context_tokens, candidates, targets[0])
-      # loss_func = get_loss(args.task)
-      # loss = loss_func(scores, targets, masks)
+        full_history, targets, context_tokens, tools = prepare_inputs(args, batch)
+        scores = model(full_history, context_tokens, tools)
+        loss = cds_loss(scores, targets, loss_func)
 
       if args.grad_accum_steps > 1:
         loss = loss / args.grad_accum_steps
-
       loss.backward()
-      torch.nn.utils.clip_grad_norm_(model.parameters(), args.max_grad_norm)
+      torch.nn.utils.clip_grad_norm_(model.parameters(), 1.0)
 
       if (step+1) % args.grad_accum_steps == 0:
         optimizer.step()
@@ -83,20 +105,17 @@ def run_train(args, dataset, model, exp_logger, kb_labels):
 
         if args.eval_interval > 0 and exp_logger.global_step % args.eval_interval == 0:
           # Log eval stats and if performs better than save checkpoint
-          result, res_name, eval_loss = run_eval(args, dataset, model, exp_logger, kb_labels, split='dev')
+          result, res_name, eval_loss = run_eval(args, datasets, model, exp_logger, kb_labels, split='dev')
           dev_score = result[res_name]
           exp_logger.log_dev(model, step+1, eval_loss, res_name, dev_score)
 
       if args.debug:
         print("step", step)
-        if step == 2: sys.exit()
+        if step == 3: sys.exit()
 
-def run_eval(args, processor, model, exp_logger, kb_labels, split='dev'):
-  dataset = processor.dev if split == 'dev' else processor.test
-  eval_sampler = SequentialSampler(dataset)
-  eval_dataloader = DataSampler(dataset, sampler=eval_sampler, batch_size=args.batch_size)
-  
-  exp_logger.start_eval(len(dataset), kind=args.filename)
+def run_eval(args, datasets, model, exp_logger, kb_labels, split='dev'):
+  dataloader, num_examples = setup_dataloader(datasets, args.batch_size, split)  
+  exp_logger.start_eval(num_examples, kind=args.filename)
   all_preds, all_labels = [], []
   convo_ids, turn_counts = [], []
   model.eval()
@@ -112,8 +131,7 @@ def run_eval(args, processor, model, exp_logger, kb_labels, split='dev'):
   
   for batch in progress_bar(eval_dataloader, desc="Evaluating"):
     batch = tuple(t.to(device) for t in batch)
-    raw_inputs = batch, args.task, args.cascade
-    full_history, batch_targets, context_tokens, tools, masks = prepare_inputs(*raw_inputs)
+    full_history, batch_targets, context_tokens, tools = prepare_inputs(args, batch)
 
     with torch.no_grad():
       batch_scores = model(full_history, context_tokens, tools)
@@ -163,10 +181,10 @@ if __name__ == "__main__":
   exp_logger = ExperienceLogger(args, ckpt_dir)
 
   if args.task == 'ast':
-    datasets = [ActionDataset(args, feats, split) for split, feats in features.items()]
+    datasets = {split: ActionDataset(args, feats) for split, feats in features.items()}
     model = ActionStateTracking(args, mappings, ckpt_dir)
   elif args.task == 'cds':
-    datasets = [CascadeDataset(args, feats, split) for split, feats in features.items()]
+    datasets = {split: CascadeDataset(args, feats) for split, feats in features.items()}
     model = CascadeDialogSuccess(args, mappings, ckpt_dir)
 
   model = model.to(device)

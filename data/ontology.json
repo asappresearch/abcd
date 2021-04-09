@@ -77,7 +77,7 @@
 			"change_option": ["change address", "change date", "change item", "change method",
 				"change order", "change price", "change time"],
 			"order_slotval": ["give credit", "tomorrow", "next week", "cancel shipment",
-				"by mail", "in store", "drop off center"],
+				"by mail", "in store", "drop off center", "waive fee"],
 			"payment_method": ["credit card", "debit card", "paypal"],
 			"product": ["calvin klein boots", "calvin klein jacket", "calvin klein jeans", "calvin klein shirt",
 				"guess boots", "guess jacket", "guess jeans", "guess shirt",

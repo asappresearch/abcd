@@ -15,8 +15,8 @@ def solicit_params():
   # ------ DIRECTORY AND SAVING --------
   parser.add_argument('--output-dir', default='outputs/', type=str)
   parser.add_argument('--input-dir', default='data/', type=str)
-  parser.add_argument('--prefix', type=str, default='2405',
-            help='distinguish the trial run, often a DD/MM/YY date')
+  parser.add_argument('--prefix', type=str, default='0524',
+            help='distinguish the trial run, often a MM/DD date')
   parser.add_argument('--filename', type=str, 
             help='name of the model if saving, or loading from saved')
   parser.add_argument('--suffix', type=str, default='v1',
@@ -53,6 +53,8 @@ def solicit_params():
 
   # ------ PARAMETER OPTIMIZATION --------
   param_group = parser.add_argument_group(title='hyperparameters')
+  parser.add_argument('--radam', default=False, action='store_true',
+            help='use RAdam optimizer rather than default AdamW')
   param_group.add_argument('-lr', '--learning-rate', default=1e-3, type=float,
             help='Learning rate alpha for weight updates')
   param_group.add_argument('--hidden-dim', default=768, type=int,

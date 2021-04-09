@@ -1,7 +1,7 @@
 outputs/
 scripts/
 data/cache/
-data/*.csv
+data/raw/
 
 .DS_Store
 __pycache__/

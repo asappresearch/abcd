@@ -9,18 +9,16 @@ import datetime
 
 from tqdm import tqdm as progress_bar
 from components.datasets import ActionFeature, CompletionFeature, CascadeFeature
+from torch.utils.data import DataLoader, RandomSampler, SequentialSampler
 
-
-def get_intent_label(scene):
-  if scene['flow'] in ["storewide_query", "single_item_query"]:
-    intent = scene['subflow'].split('_')[0]
-  elif scene['subflow'] == 'status_questions':
-    intent = 'status_active'
-  elif scene['subflow'] == 'status_delivery_date':
-    intent = 'status_delivery_time'
-  else:
-    intent = scene['subflow']
-  return intent
+def setup_dataloader(datasets, batch_size, split):
+  dataset = datasets[split]
+  num_examples = len(dataset)
+  sampler = RandomSampler(dataset) if split == 'train' else SequentialSampler(dataset)
+  collate = dataset.collate_func
+  dataloader = DataLoader(dataset, sampler=sampler, batch_size=batch_size, collate_fn=collate)
+  print(f"Loaded {split} data with {len(dataloader)} batches")
+  return dataloader, num_examples
 
 def notify_feature_sizes(args, features):
   if args.verbose:
@@ -53,74 +51,13 @@ def prepare_value_labels(ontology):
         value_list.append(val.lower())
   return {slotval: idx for idx, slotval in enumerate(value_list)}
 
-def preprocess_TCWI(self, filename):
-  scenario_df = self.load(f"scenarios_{filename}", 'csv')
-  utterance_df = self.load(f"utterances_{filename}", 'csv')
-  contexts, size = self.group_by_conversation(utterance_df, use_turn=True, use_value=True)
-  
-  num_samples = 40000
-  cand_texts, cand_ids, id_mapping = UtteranceLoader.sample_candidates(contexts, size, num_samples)
-
-  self.data = []
-  for convo_id, conversation in progress_bar(contexts.items(), total=size):
-    scene = self.extract_scene(scenario_df, convo_id)
-    delexed = self.delexicalization(scene, conversation, use_turn=True)
-
-    so_far = []
-    for turn in delexed:
-      speaker, text, action, turn_count, values = turn
-      # Get the intent label
-      intent = get_intent_label(scene)
-      utt = intent + '|' + text
-        
-      if speaker == 'customer':
-        so_far.append(utt)
-      elif speaker == 'agent':
-        pos = set(text.split())  # get all unique tokens
-        candidates = []
-        while len(candidates) < 99:
-          ni = random.choice( range(0,num_samples) )
-          neg_id, negative = cand_ids[ni], cand_texts[ni]
-          neg = set(negative.split())
-          if ni not in candidates and jaccard_distance(pos, neg) > 0.2:
-            candidates.append(ni)
-
-        pos_id = str(convo_id) + '_' + str(turn_count)
-        if pos_id in cand_ids:
-          position = id_mapping[pos_id]
-        else:
-          position = len(cand_ids)
-          cand_texts.append(text)
-          cand_ids.append(pos_id)
-          id_mapping[pos_id] = position
-
-        utt_index = random.choice(range(0,100))
-        candidates.insert(utt_index, position)
-
-        context = so_far.copy()
-        #          intent, nextstep, action, value_index, utt_index
-        targets = [intent, 'retrieve_utterance', None, None, utt_index]
-        self.data.append((context, targets, [], candidates))
-        so_far.append(utt)
-      else:  # system action
-        nextstep = 'take_action'
-        context = so_far.copy() # [::-1] to reverse
-        self.collect_examples(context, intent, nextstep, action, values)
-        so_far.append(f'action|{action}')
-
-    context = so_far.copy()
-    targets = [intent, 'end_conversation', None, None, None]
-    self.data.append((context, targets, [], [-1]*100))
-
-  trainset, devset, testset = self.split_dataset(self.data)
-  self.dataset = {"train": trainset, "dev": devset, "test": testset}
-  self.dataset["all_utterances"] = cand_texts
-
 class BaseProcessor(object):
 
   def __init__(self, args, tokenizer, ontology):
     self.task = args.task
     self.model_type = args.model_type
+    self.use_intent = args.use_intent
+
     self.tokenizer = tokenizer
     self.ontology = ontology
 
@@ -161,9 +98,9 @@ class BaseProcessor(object):
       'maximum': [effective_max, args.max_seq_len]
     }
 
-  def extract_target(self, context, action, value, options):
+  def value_to_id(self, context, action, value, potential_vals):
     # context is a list of utterances
-    target_id = -1    
+    target_id = -1
     action_tokens = self.tokenizer.tokenize(action)
     filtered = []
     for utterance in context:
@@ -177,7 +114,7 @@ class BaseProcessor(object):
     effective_max = 100 - (len(action_tokens) + 3)   # three special tokens will be added
     tokens = filtered[-effective_max:]             # [CLS] action [SEP] filtered [SEP]
 
-    for option in options:
+    for option in potential_vals:
       if option in self.enumerable:    # just look it up
         if value in self.enumerable[option]:
           target_id = self.mappers['value'][value]
@@ -264,90 +201,64 @@ class BaseProcessor(object):
 
     return {'token_ids': token_ids, 'segment_ids': segment_ids, 'mask_ids': mask_ids}
 
-  def act2id(self, action):
+  def action_to_id(self, action):
     if self.task == 'value':
       return action
     if ' ' in action:
       action, input_position = action.split(' ')
     return self.mappers['action'][action]
 
-  def build_label_ids(self, example, label_maps):
-    intent_map, nextstep_map, action_map = label_maps
-    intent, nextstep = example.intent_label, example.nextstep_label
-    label_ids = {'intent': intent_map[intent], 'nextstep': nextstep_map[nextstep] }
-    num_intents, num_nextsteps, num_actions, num_values, num_utterances = self.num_labels
-    
-    assert(len(example.candidates) == 100)
-
-    # Retrieve Utterance
-    if nextstep == 'retrieve_utterance':
-      assert(example.action_label is None)
-      assert(example.value_label is None)
-      assert(len(example.context_tokens) == 0)
-      label_ids['action'] = -1  # will be out of bounds
-      label_ids['value'] = -1 # will be out of bounds
-      label_ids['utterance'] = example.utt_label
-
-    elif nextstep == 'take_action':
-      assert(example.utt_label is None)
-      label_ids['action'] = self.convert_action_to_id(action_map, example.action_label)
-      label_ids['value'] = example.value_label
-      label_ids['utterance'] = -1  # will be out of bounds
-
-    elif nextstep == 'end_conversation':
-      assert(example.action_label is None)
-      assert(example.value_label is None)
-      assert(example.utt_label is None)
-      label_ids['action'] = -1  # will be out of bounds
-      label_ids['value'] = -1  # will be out of bounds
-      label_ids['utterance'] = -1  # will be out of bounds
-
-    else:
-      raise KeyError("nextstep key is incorrect, not part of valid set")
-
-    return label_ids
-
-  def convert_example(self, dialog_history, context_tokens, target_id, action):
+  def convert_example(self, dialog_history, target_ids, context_tokens, intent=None, candidates=None):
     sep_token = self.special['tokens'][1]
+
     texts = [utterance.split('|')[1] for utterance in dialog_history]  # drop the speaker
+    if self.use_intent:
+      texts = [f"{intent}|{text}" for text in texts]
     embedded, segments, mask = self.embed_utterance(f' {sep_token} '.join(texts))
-    # embedded, segments, mask = self.embed_utterance(f' {sep_token} '.join(dialog_history))
 
     if self.task == 'ast':
       embedded_context = self.convert_context_tokens(context_tokens)
       feature = ActionFeature(input_ids=embedded, segment_ids=segments, input_mask=mask, 
-            label_id=target_id, context=embedded_context, action_id=self.act2id(action))
+            label_ids=target_ids, context=embedded_context)
     elif self.task == 'cds':
       embedded_context = self.convert_context_tokens(context_tokens)
-      target_ids = self.build_label_ids(example, label_map)
       feature = CascadeFeature(input_ids=embedded, segment_ids=segments, input_mask=mask, 
-            label_ids=target_ids, context=embedded_context, candidates=example.candidates)
+            label_ids=target_ids, context=embedded_context, candidates=candidates)
 
     return feature
     
 class ASTProcessor(BaseProcessor):
 
-  def collect_one_example(self, context, action, value, candidates):
-    target_id, tokens = self.extract_target(context, action, value, candidates)
-    # tokens are used for copying from the context when selecting values
-    if target_id >= 0:
-      feature = self.convert_example(context, tokens, target_id, action)
-      self.split_feats.append(feature)
+  def collect_one_example(self, context, action, value, potential_vals):
+    # actions that don't require any values
+    if value == 'not applicable':
+      target_ids = { 'action': self.action_to_id(action), 'value': -1}
+      feature = self.convert_example(context, target_ids, [])
+      self.split_feats.append(feature)      
+
+    else: # actions that require at least one value
+      value_id, context_tokens = self.value_to_id(context, action, value, potential_vals)
+      # context_tokens are used for copying from the context when selecting values
+      if value_id >= 0:
+        target_ids = { 'action': self.action_to_id(action), 'value': value_id}
+        feature = self.convert_example(context, target_ids, context_tokens)
+        self.split_feats.append(feature)
 
   def collect_examples(self, context, action, values):
-    candidates = self.value_by_action[action]
+    potential_vals = self.value_by_action[action]
     # just skip if action does not require value inputs
-    if len(candidates) > 0:
-
+    if len(potential_vals) > 0:
       # these two actions require 3 value inputs, so we break it down
       if action in ['verify-identity', 'validate-purchase']:  
         # a smarter model can be made that handles each position conditioned on other values
         for position, value in zip(['a', 'b', 'c'], values):
           action_name = action + ' ' + position
-          self.collect_one_example(context, action_name, value, candidates)
+          self.collect_one_example(context, action_name, value, potential_vals)
       # other actions require a single value to be filled
       else:
-        self.collect_one_example(context, action, values[0], candidates)
+        self.collect_one_example(context, action, values[0], potential_vals)
+    else:
+      self.collect_one_example(context, action, 'not applicable', potential_vals)
 
   def build_features(self, args, raw_data):
     features = {}
@@ -359,103 +270,103 @@ class ASTProcessor(BaseProcessor):
       for convo in progress_bar(data, total=len(data)):
         so_far = []
 
-        for turn in convo['delex']:
-          speaker, utt, action, value = turn
+        for turn in convo['delexed']:
+          speaker, utt = turn['speaker'], turn['text']
+          _, _, action, values, _ = turn['targets']
 
           if speaker in ['agent', 'customer']:
             utt_str = f'{speaker}|{utt}'
             so_far.append(utt_str)
           else:   # create a training example during every action
             context = so_far.copy() # [::-1] to reverse
-            self.collect_examples(context, action, value)
+            self.collect_examples(context, action, values)
             action_str = f'action|{action}'
             so_far.append(action_str)
 
       features[split] = self.split_feats
     return features
 
-def CDSProcessor(BaseProcessor):
+class CDSProcessor(BaseProcessor):
 
-  def collect_examples(self, context, intent, nextstep, action, values, convo_id, turn_count):
-    options = self.value_by_action[action]
-    candidates = [-1] * 100
+  def collect_one_example(self, dialog_history, targets, support_items):
+    intent, nextstep, action, _, utt_id = targets
+    candidates = [-1]*100
+    context_tokens = []
+    action_id, value_id = -1, -1
 
-    if len(options) > 0:           # just skip if action does not require inputs
+    if nextstep == 'take_action':
+      value, potential_vals, convo_id, turn_id = support_items
+      action_id = self.action_to_id(action)
+      if value != 'not applicable':
+        value_id, context_tokens = self.value_to_id(dialog_history, action, value, potential_vals)
+
+    elif nextstep == 'retrieve_utterance':
+      candidates, convo_id, turn_id = support_items
+
+    elif nextstep == 'end_conversation':
+      convo_id, turn_id = support_items
+
+    target_ids = {
+      'intent': self.mappers['intent'][intent],
+      'nextstep': self.mappers['nextstep'][nextstep],
+      'action': action_id,
+      'value': value_id,
+      'utterance': utt_id,
+      'convo': convo_id,
+      'turn': turn_id,
+    }
+    feature = self.convert_example(dialog_history, target_ids, context_tokens, intent, candidates)  
+    self.split_feats.append(feature)
+
+  def collect_examples(self, context, targets, convo_id, turn_id):
+    _, _, action, values, _ = targets
+    potential_vals = self.value_by_action[action]
+
+    if len(potential_vals) > 0:           # just skip if action does not require inputs
       if action in ['verify-identity', 'validate-purchase']:  # 3 action inputs
         for position, value in zip(['a', 'b', 'c'], values):
           action_name = action + ' ' + position
-          value_index, tokens = self.extract_target(context, action_name, value, options)
-          targets = [intent, nextstep, action_name, value_index, None]
-          self.data.append((context, targets, tokens, candidates, convo_id, turn_count))
+          self.collect_one_example(context, targets, (value, potential_vals, convo_id, turn_id))  
       else:
-        value_index, tokens = self.extract_target(context, action, values[0], options)
-        targets = [intent, nextstep, action, value_index, None]
-        self.data.append((context, targets, tokens, candidates, convo_id, turn_count))
+        self.collect_one_example(context, targets, (values[0], potential_vals, convo_id, turn_id))  
     else:
-      targets = [intent, nextstep, action, -1, None]
-      self.data.append((context, targets, [], candidates, convo_id, turn_count))
+      self.collect_one_example(context, targets, ("not applicable", potential_vals, convo_id, turn_id))
 
   def build_features(self, args, raw_data):
-    scenario_df = self.load(f"scenarios_{filename}", 'csv')
-    utterance_df = self.load(f"utterances_{filename}", 'csv')
-    contexts, size = self.group_by_conversation(utterance_df, use_turn=True, use_value=True)
-    
-    num_samples = 40000
-    cand_texts, cand_ids, id_mapping = UtteranceLoader.sample_candidates(contexts, size, num_samples)
+    features = {}
 
-    self.data = []
-    for convo_id, conversation in progress_bar(contexts.items(), total=size):
-      scene = self.extract_scene(scenario_df, convo_id)
-      delexed = self.delexicalization(scene, conversation, use_turn=True)
+    for split, data in raw_data.items():
+      self.split_feats = []
+      print(f"Building features for {split}")
 
-      so_far = []
-      for turn in delexed:
-        speaker, text, action, turn_count, values = turn
-        intent = self.get_intent_label(scene)
-        utt = speaker + '|' + text
-          
-        if speaker == 'customer':
-          so_far.append(utt)
-        elif speaker == 'agent':
-          pos = set(text.split())  # get all unique tokens
-          candidates = []
-          while len(candidates) < 99:
-            ni = random.choice( range(0,num_samples) )
-            neg_id, negative = cand_ids[ni], cand_texts[ni]
-            neg = set(negative.split())
-            if ni not in candidates and jaccard_distance(pos, neg) > 0.2:
-              candidates.append(ni)
+      for convo in progress_bar(data, total=len(data)):
+        so_far = []
 
-          pos_id = str(convo_id) + '_' + str(turn_count)
-          if pos_id in cand_ids:
-            position = id_mapping[pos_id]
+        for turn in convo['delexed']:
+          speaker, text = turn['speaker'], turn['text']
+          utterance = f"{speaker}|{text}"
+
+          if speaker == 'agent':
+            context = so_far.copy()
+            support_items = turn['candidates'], convo['convo_id'], turn['turn_count']
+            self.collect_one_example(context, turn['targets'], support_items)
+            so_far.append(utterance)
+          elif speaker == 'action':
+            context = so_far.copy()
+            self.collect_examples(context, turn['targets'], convo['convo_id'], turn['turn_count'])
+            so_far.append(utterance)
           else:
-            position = len(cand_ids)
-            cand_texts.append(text)
-            cand_ids.append(pos_id)
-            id_mapping[pos_id] = position
+            so_far.append(utterance)
 
-          utt_index = random.choice(range(0,100))
-          candidates.insert(utt_index, position)
+        context = so_far.copy()  # the entire conversation
+        end_targets = turn['targets'].copy()
+        end_targets[1] = 'end_conversation'
+        end_targets[4] = -1
+        support_items = convo['convo_id'], turn['turn_count']
+        self.collect_one_example(context, end_targets, support_items)
 
-          context = so_far.copy()
-          #          intent, nextstep, action, value_index, utt_index
-          targets = [intent, 'retrieve_utterance', None, None, utt_index]
-          self.data.append((context, targets, [], candidates, convo_id, turn_count))
-          so_far.append(utt)
-        else:  # system action
-          nextstep = 'take_action'
-          context = so_far.copy() # [::-1] to reverse
-          self.collect_cds_examples(context, intent, nextstep, action, values, convo_id, turn_count)
-          so_far.append(f'action|{action}')
-
-      context = so_far.copy()
-      targets = [intent, 'end_conversation', None, None, None]
-      self.data.append((context, targets, [], [-1]*100, convo_id, turn_count))
-
-    trainset, devset, testset = self.split_dataset(self.data)
-    self.dataset = {"train": trainset, "dev": devset, "test": testset}
-    self.dataset["all_utterances"] = cand_texts
+      features[split] = self.split_feats
+    return features
 
 def process_data(args, tokenizer, ontology, raw_data, cache_path, from_cache):
   # Takes in a pre-processed dataset and performs further operations:
@@ -467,6 +378,7 @@ def process_data(args, tokenizer, ontology, raw_data, cache_path, from_cache):
 
   if from_cache:
     features = torch.load(cache_path)
+    print(f"Features loaded successfully.")
   else:
     features = processor.build_features(args, raw_data)
     print(f"Saving features into cached file {cache_path}")

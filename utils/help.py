@@ -21,6 +21,9 @@ def setup_gpus(args):
     if n_gpu > 0:   # this is not an 'else' statement and cannot be combined
         torch.backends.cudnn.benchmark = False
         torch.backends.cudnn.deterministic = True
+
+    if args.debug:
+        args.epochs = 3
     return args
 
 def check_cache(args, cache_dir):
@@ -53,26 +56,26 @@ def check_directories(args):
     cache_results = check_cache(args, cache_dir)
     return ckpt_dir, cache_results
 
-def prepare_inputs(batch, task, cascade, speaker_turn=False):
+def prepare_inputs(args, batch, speaker_turn=False):
 
-    if task == 'ast':
+    if args.task == 'ast':
         full_history = {'input_ids': batch[0], 'token_type_ids': batch[1], 'attention_mask': batch[2]}
-        targets = [batch[6], batch[7]] # actions and values
         context_tokens = {'input_ids': batch[3], 'token_type_ids': batch[4], 'attention_mask': batch[5]}
-        tools, masks = None, None
-        return full_history, targets, context_tokens, tools, masks
+        targets = [batch[6], batch[7]] # actions and values
+        tools = device
     else:
         full_history = {'input_ids': batch[0], 'token_type_ids': batch[1], 'attention_mask': batch[2]}
-        candidates = batch[3]
-        context_tokens = {'input_ids': batch[4], 'token_type_ids': batch[5], 'attention_mask': batch[6]}
+        context_tokens = {'input_ids': batch[3], 'token_type_ids': batch[4], 'attention_mask': batch[5]}
         #           intent   nextstep   action    value     utterance
-        targets = [batch[7], batch[8], batch[9], batch[10], batch[11]]
-        masks = {'action': batch[12], 'value': batch[13], 'utterance': batch[14]}
-        if cascade:
-            targets.append(batch[15])
-            targets.append(batch[16])
-        if task == 'tcwi':
-          tools = candidates, targets[0]
+        targets = [batch[6], batch[7], batch[8], batch[9], batch[10]]
+        candidates = batch[11]
+
+        if args.cascade:
+            targets.append(batch[15])   # convo_ids
+            targets.append(batch[16])   # turn_counts
+        if args.use_intent:
+          tools = candidates, device, batch[6]
         else:
-          tools = candidates
-        return full_history, targets, context_tokens, tools, masks
+          tools = candidates, device
+    
+    return full_history, targets, context_tokens, tools

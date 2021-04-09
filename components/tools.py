@@ -30,18 +30,15 @@ class ExperienceLogger(object):
 
     def start_train(self, num_examples, total_step):
         self.logger.info("***** Running training *****")
-        self.logger.info("  Num examples = %d", num_examples)
-        self.logger.info("  Num Epochs = %d", self.args.epochs)
-        self.logger.info("  Total train batch size  = %d", self.args.batch_size)
-        self.logger.info("  Total optimization steps = %d", total_step)
-        self.logger.info("  Running experiment for {} {}".format(self.task, self.args.filename))
+        self.logger.info(f"  Train examples: {num_examples}, Batch size: {self.args.batch_size}")
+        self.logger.info(f"  Num epochs: {self.args.epochs}, Optimization steps: {total_step}")
+        self.logger.info(f"  Running experiment for {self.task} {self.args.filename}")
 
     def start_eval(self, num_examples, kind):
         self.epoch += 1
         epoch_msg = f"epoch {self.epoch} evaluation"
         self.logger.info(f"***** Running {epoch_msg} for {kind} {self.mtype} *****")
-        self.logger.info("  Num examples = %d", num_examples)
-        self.logger.info("  Batch size = %d", self.args.batch_size)
+        self.logger.info(f"  Num evaluation examples: {num_examples}")
 
     def end_eval(self, result, kind):
         self.logger.info("***** Eval results for {} *****".format(kind))
@@ -80,7 +77,7 @@ class ExperienceLogger(object):
             self.dev_writer.add_scalar(name, value, step)
 
 
-class RAdamOptimizer(Optimizer):
+class RAdam(Optimizer):
 
     def __init__(self, params, lr=1e-3, betas=(0.9, 0.999), eps=1e-8, weight_decay=0, degenerated_to_sgd=True):
         if not 0.0 <= lr:
