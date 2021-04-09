@@ -51,12 +51,12 @@ Each conversation is made up of a list of turns.  Each turn is a dict with five 
   - _Text_: the utterance of the agent/customer or the system generated response of the action
   - _Turn_Count_: integer representing the turn number, starting from 1
   - _Targets_ : list of five items representing the subtask labels
-      a. Intent Classification (text) - 55 subflow options
-      b. Nextstep Selection (text) - take_action, retrieve_utterance or end_conversation; 3 options
-      c. Action Prediction (text) - the button clicked by the agent; 30 options
-      d. Value Filling (list) - the slot value(s) associated with the action above; 125 options
-      e. Utterance Ranking (int) - target position within list of candidates; 100 options
-  - _Candidates_: list of utterance ids representing the pool of 100 candidates to choose from when ranking. The surface form text can be found in `utterances.json` where the utt_id is the index. Only applicable when the current turn is a `retrieve_utterance` step.
+      * Intent Classification (text) - 55 subflow options
+      * Nextstep Selection (text) - take_action, retrieve_utterance or end_conversation; 3 options
+      * Action Prediction (text) - the button clicked by the agent; 30 options
+      * Value Filling (list) - the slot value(s) associated with the action above; 125 options
+      * Utterance Ranking (int) - target position within list of candidates; 100 options
+  - _Candidates_: list of utterance ids representing the pool of 100 candidates to choose from when ranking. The surface form text can be found in `utterances.json` where the utt_id is the index. Only applicable when the current turn is a "retrieve_utterance" step.
 
 In contrast to the original conversation, the delexicalized version will replace certain segments of text with special tokens.  For example, an utterance might say "My Account ID is 9KFY4AOHGQ".  This will be changed into "my account id is <account_id>".
 

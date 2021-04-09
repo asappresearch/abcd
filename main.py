@@ -70,6 +70,7 @@ def run_train(args, datasets, model, exp_logger, kb_labels):
   exp_logger.start_train(num_examples, total_step=t_total)
   optimizer = get_optimizer(args, model)
   scheduler = get_scheduler(args, optimizer, t_total)
+  loss_func = torch.nn.CrossEntropyLoss(ignore_index=-1)
   model.zero_grad()
 
   for epoch in range(args.epochs):
@@ -77,7 +78,6 @@ def run_train(args, datasets, model, exp_logger, kb_labels):
 
     for step, batch in enumerate(dataloader):
       batch = tuple(t.to(device) for t in batch)
-      loss_func = torch.nn.CrossEntropyLoss(ignore_index=-1)
 
       if args.task == 'ast':
         full_history, targets, context_tokens, _ = prepare_inputs(args, batch)
@@ -95,79 +95,61 @@ def run_train(args, datasets, model, exp_logger, kb_labels):
 
       if (step+1) % args.grad_accum_steps == 0:
         optimizer.step()
-        scheduler.step()  # Update learning rate schedule
+        scheduler.step()
         model.zero_grad()
-        exp_logger.global_step += 1
+        exp_logger.log_train(step+1, loss.item(), scores, targets)
 
-        if args.log_interval > 0 and exp_logger.global_step % args.log_interval == 0:
-          loss_result = loss.item()
-          exp_logger.log_train(step+1, loss_result, scores, targets)
+      if args.debug and step >= 3:
+        break
 
-        if args.eval_interval > 0 and exp_logger.global_step % args.eval_interval == 0:
-          # Log eval stats and if performs better than save checkpoint
-          result, res_name, eval_loss = run_eval(args, datasets, model, exp_logger, kb_labels, split='dev')
-          dev_score = result[res_name]
-          exp_logger.log_dev(model, step+1, eval_loss, res_name, dev_score)
-
-      if args.debug:
-        print("step", step)
-        if step == 3: sys.exit()
+    result, res_name = run_eval(args, datasets, model, exp_logger, kb_labels, split='dev')
+    dev_score = result[res_name]
+    if dev_score > exp_logger.best_score:
+        model.save_pretrained(exp_logger.filepath) 
+        exp_logger.best_score = dev_score
+    exp_logger.log_dev(step+1, res_name, dev_score)
 
 def run_eval(args, datasets, model, exp_logger, kb_labels, split='dev'):
   dataloader, num_examples = setup_dataloader(datasets, args.batch_size, split)  
   exp_logger.start_eval(num_examples, kind=args.filename)
-  all_preds, all_labels = [], []
-  convo_ids, turn_counts = [], []
+  loss_func = torch.nn.CrossEntropyLoss(ignore_index=-1)
+  num_outputs = len(model.outputs)
   model.eval()
 
-  if args.quantify or split=='dev':
-    eval_loss, num_eval_steps = 0, 0
-    num_outputs = len(model.outputs)
-  if args.qualify or args.breakdown:
-    tokenizer = processor.tokenizer
-    target_maps = [processor.action_labels, processor.value_labels]
-    if args.task == 'cds':
-      target_maps.extend([processor.intent_labels, processor.nextstep_labels])
-  
-  for batch in progress_bar(eval_dataloader, desc="Evaluating"):
+  preds, labels, convo_ids, turn_counts = [], [], [], []
+  for batch in progress_bar(dataloader, total=len(dataloader), desc="Evaluation"):
     batch = tuple(t.to(device) for t in batch)
     full_history, batch_targets, context_tokens, tools = prepare_inputs(args, batch)
 
     with torch.no_grad():
-      batch_scores = model(full_history, context_tokens, tools)
-    loss_func = get_loss(args.task)
-    if args.cascade and args.task in ['cds', 'tcwi']:
+      if args.task == 'ast':
+        batch_scores = model(full_history, context_tokens)
+        batch_loss = ast_loss(batch_scores, batch_targets, loss_func)
+      elif args.task == 'cds':
+        batch_scores = model(full_history, context_tokens, tools)
+        batch_loss = cds_loss(batch_scores, batch_targets, loss_func)
+
+    if args.cascade:
       batch_turn_count = batch_targets.pop()
       batch_convo_id = batch_targets.pop()
 
     if args.quantify or split=='dev':
-      batch_eval_loss = loss_func(batch_scores, batch_targets, masks)
-      eval_loss += batch_eval_loss.mean().item()
-      num_eval_steps += 1
-    elif args.qualify:
-      history_ids = full_history['input_ids'].detach().cpu().numpy()
-      context_ids = context_tokens['input_ids'].detach().cpu().numpy()
-      ids = [history_ids, context_ids]
-      qualify(args, ids, tokenizer, target_maps, batch_scores, batch_targets)
+      exp_logger.eval_loss += batch_loss.mean().item()
+      exp_logger.num_eval_steps += 1
     
-    all_preds.append(batch_scores)
-    all_labels.append(batch_targets)
+    preds.append(batch_scores)
+    labels.append(batch_targets)
     convo_ids.append(batch_convo_id if args.cascade else 0)
     turn_counts.append(batch_turn_count if args.cascade else 0)
     
-  grouped_preds = [torch.cat([pred[i] for pred in all_preds], dim=0) for i in range(num_outputs)]
-  grouped_labels = [torch.cat([label[i] for label in all_labels], dim=0) for i in range(num_outputs)]
-  preds_and_labels = [grouped_preds, grouped_labels]
+  grouped_preds = [torch.cat([pred[i] for pred in preds], dim=0) for i in range(num_outputs)]
+  grouped_labels = [torch.cat([label[i] for label in labels], dim=0) for i in range(num_outputs)]
   ci_and_tc = (torch.cat(convo_ids, dim=0), torch.cat(turn_counts, dim=0)) if args.cascade else (0, 0)
 
-  eval_loss = eval_loss / num_eval_steps
-  tools = {}
-  if args.use_kb:   tools['kb_labels'] = kb_labels
-  if args.cascade:  tools['ci_and_tc'] = ci_and_tc
-  metrics, res_name = quantify(args, preds_and_labels, tools)
+  utils = { 'kb_labels': kb_labels, 'ci_and_tc': ci_and_tc }
+  metrics, res_name = quantify(args, grouped_preds, grouped_labels, utils)
   exp_logger.end_eval(metrics, kind=args.filename)
-  return (metrics, res_name, eval_loss) if split == 'dev' else metrics
-
+  return (metrics, res_name) if split == 'dev' else metrics
 
 if __name__ == "__main__":
   args = solicit_params()

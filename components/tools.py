@@ -36,6 +36,9 @@ class ExperienceLogger(object):
 
     def start_eval(self, num_examples, kind):
         self.epoch += 1
+        self.eval_loss = 0
+        self.batch_steps = 0
+
         epoch_msg = f"epoch {self.epoch} evaluation"
         self.logger.info(f"***** Running {epoch_msg} for {kind} {self.mtype} *****")
         self.logger.info(f"  Num evaluation examples: {num_examples}")
@@ -46,25 +49,29 @@ class ExperienceLogger(object):
             self.logger.info("  %s = %s", key, str(result[key]))
 
     def log_train(self, step, loss, preds, labels):
-        preds_and_labels = preds, labels
-        result, metric = quantify(self.args, preds_and_labels)
-        value = result[metric]
-        log_str = 'Step {:>6d} | Loss {:5.4f} | {} {:.3f}'.format(step, loss, metric, value)
-        self.logger.info(log_str)
-        self.add_scalar('train', 'loss', loss, self.global_step)
-        self.add_scalar('train', metric.lower(), value, self.global_step)
+        if self.log_interval > 0 and self.global_step % self.log_interval == 0:
+            log_str = 'Step {:>6d} | Loss {:5.4f}'.format(step, loss)
+            self.add_scalar('train', 'loss', loss, self.global_step)
 
-    def log_dev(self, model, step, loss, metric, value):
+            if self.verbose:
+                result, metric = quantify(self.args, preds, labels)
+                value = round(result[metric], 3)
+                log_str += f" | {metric} {value}"
+                self.add_scalar('train', metric.lower(), value, self.global_step)
+            self.logger.info(log_str)
+
+        self.global_step += 1
+
+
+    def log_dev(self, step, metric, value):
         self.eval_step += 1
 
-        log_str = 'Eval {:3d} | Loss {:5.4f} | {} {}'.format(step, loss, metric, value)
+        avg_eval_loss = round(self.eval_loss / self.batch_steps, 4)
+        log_str = 'Eval {:3d} | Loss {} | {} {}'.format(step, avg_eval_loss, metric, value)
         self.logger.info(log_str)
-        self.add_scalar('dev', 'loss', loss, self.global_step)
+        self.add_scalar('dev', 'loss', avg_eval_loss, self.global_step)
         self.add_scalar('dev', metric.lower(), value, self.global_step)
 
-        if value > self.best_score:
-            if self.do_save: model.save_pretrained(self.filepath) 
-            self.best_score = value
 
     def init_tb_writers(self):
         self.train_writer = SummaryWriter(log_dir=self.output_dir + '/train')

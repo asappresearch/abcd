@@ -5,7 +5,7 @@ def solicit_params():
   parser.add_argument('--seed', help='Random seed', type=int, default=14)
   parser.add_argument('--model-type', choices=['roberta', 'bert', 'dialogpt', 'albert'],
             help='Which type of encoder and tokenizer to use', default='bert')
-  parser.add_argument('--task', default='intent', type=str, choices=['ast', 'cds'],
+  parser.add_argument('--task', default='ast', type=str, choices=['ast', 'cds'],
             help='choose which of the two major tasks to train the model', )
   parser.add_argument('--debug', default=False, action='store_true',
             help='whether or not to go into debug mode, which is faster')
@@ -28,7 +28,6 @@ def solicit_params():
   parser.add_argument('--do-eval', default=False, action='store_true',
             help='load the best saved model and run evaluation, qualify or quantify flags must be on')
   parser.add_argument('--log-interval', default=40, type=int)
-  parser.add_argument('--eval-interval', default=400, type=int)
   parser.add_argument('--qualify', default=False, action='store_true',
             help='examine the qualitative outputs of the model in natural language')
   parser.add_argument('--quantify', default=False, action='store_true',
@@ -55,7 +54,7 @@ def solicit_params():
   param_group = parser.add_argument_group(title='hyperparameters')
   parser.add_argument('--radam', default=False, action='store_true',
             help='use RAdam optimizer rather than default AdamW')
-  param_group.add_argument('-lr', '--learning-rate', default=1e-3, type=float,
+  param_group.add_argument('-lr', '--learning-rate', default=3e-5, type=float,
             help='Learning rate alpha for weight updates')
   param_group.add_argument('--hidden-dim', default=768, type=int,
             help='Number of hidden units, size of hidden dimension')
