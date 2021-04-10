@@ -1,4 +1,3 @@
-import os, sys, pdb
 import json
 import random
 import torch
@@ -19,9 +18,6 @@ for cand_text in progress_bar(utt_texts, total=num_cands):
   cand_inputs = tokenizer(cand_text, return_tensors="pt")
   with torch.no_grad():
 	  cand_outputs = model(**cand_inputs)
-  foo = cand_outputs.pooler_output
-  print("foo: {}".format(foo.shape))
-  pdb.set_trace()
   utt_vectors.append(cand_outputs.pooler_output)
 
 utt_vectors = torch.cat(utt_vectors)

@@ -7,7 +7,7 @@ python main.py --do-eval --quantify  --model-type roberta --prefix 0524 --filena
 
 # -------- CASCADING DIALOG SUCCESS ------------
 # Preprocess utterances if running for the first time, change model-type as needed
-# PYTHONPATH=. python utils/embed_candidates.py
+# PYTHONPATH=. python utils/embed.py
 # >>> Training <<<
 python main.py --learning-rate 3e-5 --weight-decay 0 --batch-size 10 --epoch 14 --log-interval 600 \
     --model-type bert --prefix 0524 --filename final --task cds
