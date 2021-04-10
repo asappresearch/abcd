@@ -27,7 +27,7 @@ def solicit_params():
   # ------ TRAINING AND EVALUATION --------
   parser.add_argument('--do-eval', default=False, action='store_true',
             help='load the best saved model and run evaluation, qualify or quantify flags must be on')
-  parser.add_argument('--log-interval', default=40, type=int)
+  parser.add_argument('--log-interval', default=100, type=int)
   parser.add_argument('--qualify', default=False, action='store_true',
             help='examine the qualitative outputs of the model in natural language')
   parser.add_argument('--quantify', default=False, action='store_true',

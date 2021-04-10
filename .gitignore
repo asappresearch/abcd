@@ -2,6 +2,7 @@ outputs/
 scripts/
 data/cache/
 data/raw/
+results/
 
 .DS_Store
 __pycache__/

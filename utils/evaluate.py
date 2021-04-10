@@ -13,13 +13,31 @@ from sklearn.metrics import accuracy_score
 
 from components.systems import Application
 from utils.help import prepare_inputs
+from utils.load import load_guidelines
 
-def accuracy_report(predictions, labels):
-  preds = np.argmax(predictions, axis=1)
-  acc = accuracy_score(labels, preds)
-  full_result = {'Accuracy': round(acc, 4)}
+def ast_report(predictions, labels):
+  action_preds, value_preds = predictions
+  action_labels, value_labels = labels
 
-  return full_result, 'Accuracy'
+  size = len(action_preds)
+  assert(size == len(value_labels))
+
+  top_action_preds = np.argmax(action_preds, axis=1)
+  action_match = action_labels == top_action_preds   # array of booleans
+  action_acc = sum(action_match) / float(size) 
+
+  top_value_preds = np.argmax(value_preds, axis=1)
+  value_match = value_labels == top_value_preds
+  value_acc = sum(value_match) / float(size) 
+
+  joint_match = action_match & value_match
+  joint_acc = sum(joint_match) / float(size) 
+
+  full_result = {'Action_Accuracy': round(action_acc, 4),
+          'Value_Accuracy': round(value_acc, 4),
+          'Joint_Accuracy': round(joint_acc, 4),}
+
+  return full_result, 'Joint_Accuracy'
 
 def ranking_report(predictions, labels, use_match=False):
   full_result = {}
@@ -50,31 +68,7 @@ def ranking_report(predictions, labels, use_match=False):
   else:
     return full_result, 'Recall_at_5'
 
-def aa_with_values_report(predictions, labels):
-  action_preds, value_preds = predictions
-  action_labels, value_labels = labels
-
-  size = len(action_preds)
-  assert(size == len(value_labels))
-
-  top_action_preds = np.argmax(action_preds, axis=1)
-  action_match = action_labels == top_action_preds   # array of booleans
-  action_acc = sum(action_match) / float(size) 
-
-  top_value_preds = np.argmax(value_preds, axis=1)
-  value_match = value_labels == top_value_preds
-  value_acc = sum(value_match) / float(size) 
-
-  joint_match = action_match & value_match
-  joint_acc = sum(joint_match) / float(size) 
-
-  full_result = {'Action_Accuracy': round(action_acc, 4),
-          'Value_Accuracy': round(value_acc, 4),
-          'Joint_Accuracy': round(joint_acc, 4),}
-
-  return full_result, 'Joint_Accuracy'
-
-def cascaded_evaluation_report(predictions, labels, ci_and_tc, kb_labels=None):
+def cds_report(predictions, labels, ci_and_tc, kb_labels=None):
   """ Calculated in the form of cascaded evaluation
   where each agent example or utterance a scored example"""
   intent_pred, nextstep_pred, action_pred, value_pred, utterance_rank = predictions
@@ -88,6 +82,8 @@ def cascaded_evaluation_report(predictions, labels, ci_and_tc, kb_labels=None):
     use_kb = True
     intent_list = kb_labels['intent']
     action_list = kb_labels['action']
+    guidelines = load_guidelines()
+    action_mask_map, intent_mask_map = Application.prepare_masks(*guidelines)
 
   num_turns = len(nextstep_pred)
   assert(num_turns == len(convo_ids))
@@ -230,6 +226,8 @@ def task_completion_report(predictions, labels, kb_labels=None):
     use_kb = True
     intent_list = kb_labels['intent']
     action_list = kb_labels['action']
+    guidelines = load_guidelines()
+    action_mask_map, intent_mask_map = Application.prepare_masks(*guidelines)
 
   top_intent_preds = np.argmax(intent_pred, axis=1)
   intent_match = intent_label == top_intent_preds   # array of booleans
@@ -351,43 +349,26 @@ def qualify(args, ids, tokenizer, target_maps, scores, targets):
 
 def quantify(args, predictions, labels, utils=None):
   assert len(predictions) == len(labels)
+ 
+  if utils == "train" and not args.verbose:
+    return predictions, labels
 
-  if args.task == 'utterance':
-    predictions = predictions.detach().cpu().numpy()
-    labels = labels.detach().cpu().numpy()
-    report, res_name = ranking_report(predictions, labels)
-
-  elif args.task == 'aawv':
+  if args.task == 'ast':
     predictions = [pred.detach().cpu().numpy() for pred in predictions]
     labels = [label.detach().cpu().numpy() for label in labels]
-    report, res_name = aa_with_values_report(predictions, labels)
+    report, res_name = ast_report(predictions, labels)
 
-  elif args.task in ['tcom', 'tcwi', 'remove']:
+  elif args.task == 'cds':
     predictions = [pred.detach().cpu().numpy() for pred in predictions]
     labels = [label.detach().cpu().numpy() for label in labels]
     kb_labels = utils['kb_labels'] if args.use_kb else None
 
     if args.cascade:
       ci_and_tc = utils['ci_and_tc']
-      result = cascaded_evaluation_report(predictions, labels, ci_and_tc, kb_labels)
+      result = cds_report(predictions, labels, ci_and_tc, kb_labels)
       report, res_name = result
     else:
       report, res_name = task_completion_report(predictions, labels, kb_labels)
-    if args.breakdown:
-      target_maps = utils['target_maps']
-      report = task_completion_breakdown(predictions, labels, target_maps, report)
-    elif args.do_eval:
-      pass
-    else:
-      del report['Intent_Accuracy']
-      del report['Value_Accuracy']
-      del report['Recall_at_5']
-      del report['Recall_at_10']
-
-  else:
-    predictions = predictions.detach().cpu().numpy()
-    labels = labels.detach().cpu().numpy()
-    report, res_name = accuracy_report(predictions, labels)
 
   return report, res_name
 
@@ -400,5 +381,3 @@ if __name__ == '__main__':
 
   args = {}
   run_interaction(args, MyModel())
-  # allow user to speak multiple turns in a row
-  # group together actions that have multiple values

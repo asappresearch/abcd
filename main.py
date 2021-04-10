@@ -18,14 +18,18 @@ def run_main(args, datasets, model, exp_logger):
   if args.task == 'cds':
     utt_data = load_candidates(args)
     model.add_candidate_data(*utt_data)
-  kb_labels = {'intent': dataset.intent_labels, 'action': dataset.action_labels} if args.use_kb else {}
+  kb_labels = {}
+  if args.use_kb:
+    kb_labels['intent'] = list(model.mappings['intent'].keys())
+    kb_labels['action'] = list(model.mappings['action'].keys())
+
   exp_logger.init_tb_writers()
   run_train(args, datasets, model, exp_logger, kb_labels)
 
   if args.do_eval:
-    result = run_eval(args, datasets['test'], model, exp_logger, kb_labels, split='test')
+    result = run_eval(args, datasets, model, exp_logger, kb_labels, split='test')
     results = dict((k + f'_{args.filename}', v) for k, v in result.items())
-    print(results)
+    print('Test Results -', results)
 
 def ast_loss(scores, targets, loss_func):
   action_score, value_score = scores
@@ -97,9 +101,10 @@ def run_train(args, datasets, model, exp_logger, kb_labels):
         optimizer.step()
         scheduler.step()
         model.zero_grad()
-        exp_logger.log_train(step+1, loss.item(), scores, targets)
+        result, metric = quantify(args, scores, targets, "train")
+        exp_logger.log_train(step, loss.item(), result, metric)
 
-      if args.debug and step >= 3:
+      if args.debug and step > 3*args.log_interval:
         break
 
     result, res_name = run_eval(args, datasets, model, exp_logger, kb_labels, split='dev')
@@ -117,7 +122,7 @@ def run_eval(args, datasets, model, exp_logger, kb_labels, split='dev'):
   model.eval()
 
   preds, labels, convo_ids, turn_counts = [], [], [], []
-  for batch in progress_bar(dataloader, total=len(dataloader), desc="Evaluation"):
+  for batch in progress_bar(dataloader, total=len(dataloader), desc=f"Epoch {exp_logger.epoch}"):
     batch = tuple(t.to(device) for t in batch)
     full_history, batch_targets, context_tokens, tools = prepare_inputs(args, batch)
 
@@ -135,12 +140,16 @@ def run_eval(args, datasets, model, exp_logger, kb_labels, split='dev'):
 
     if args.quantify or split=='dev':
       exp_logger.eval_loss += batch_loss.mean().item()
-      exp_logger.num_eval_steps += 1
+      exp_logger.batch_steps += 1
     
     preds.append(batch_scores)
     labels.append(batch_targets)
     convo_ids.append(batch_convo_id if args.cascade else 0)
     turn_counts.append(batch_turn_count if args.cascade else 0)
+
+    if args.debug:
+      if len(turn_counts) > 10:
+        break
     
   grouped_preds = [torch.cat([pred[i] for pred in preds], dim=0) for i in range(num_outputs)]
   grouped_labels = [torch.cat([label[i] for label in labels], dim=0) for i in range(num_outputs)]

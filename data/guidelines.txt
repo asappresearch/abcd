@@ -1,5 +1,17 @@
 Original document:
 https://docs.google.com/document/d/1_SZit-iUAzNCICJ6qahULoMhqVOJCspQF37QiEJzHLc/edit
 
+Major Flows:
+Product Defect - refunds and returns
+Order Issue - get status of an order or change an order, possibly shipping
+Account Access - username, password, two-factor authentication
+Troubleshoot Site - website slow, search not working, credit card, cart not updating
+Manage Account - subscription service added or removed, change profile info
+Purchase Dispute - bad price, out of stock, promo codes, billing
+Shipping Issue - check our update a shipment of an item
+Subscription Inquiry - billing and updates of the premium subscription service
+Single-Item Query - FAQ questions about jeans, boots, shirt or sweater 
+Storewide Query - FAQ questions about pricing, timing, membership or features 
+
 Formatted document:
 <coming soon>

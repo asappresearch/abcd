@@ -1,7 +1,6 @@
 import os, sys, pdb
 import logging
 import numpy as np
-from utils.evaluate import quantify
 
 from tensorboardX import SummaryWriter
 from torch.optim.optimizer import Optimizer, required
@@ -15,15 +14,15 @@ class ExperienceLogger(object):
         self.logger = logging.getLogger(__name__)
         self.logger.addHandler(logging.FileHandler(args.output_dir + '/exp.log'))
 
+        self.epoch = 0
         self.global_step = 0
-        self.log_interval = args.log_interval
         self.eval_step = 0
-        self.eval_interval = args.eval_interval
+        self.log_interval = args.log_interval
 
         self.best_score = float('-inf')
         self.task = args.task
         self.mtype = args.model_type
-        self.epoch = 0
+        self.verbose = args.verbose
 
         self.output_dir = args.output_dir
         self.filepath = os.path.join(checkpoint_dir, 'pytorch_model.pt')
@@ -39,29 +38,28 @@ class ExperienceLogger(object):
         self.eval_loss = 0
         self.batch_steps = 0
 
-        epoch_msg = f"epoch {self.epoch} evaluation"
-        self.logger.info(f"***** Running {epoch_msg} for {kind} {self.mtype} *****")
-        self.logger.info(f"  Num evaluation examples: {num_examples}")
+        if self.verbose:
+          epoch_msg = f"epoch {self.epoch} evaluation"
+          self.logger.info(f"***** Running {epoch_msg} for {kind} {self.mtype} *****")
+          self.logger.info(f"  Num evaluation examples: {num_examples}")
 
     def end_eval(self, result, kind):
         self.logger.info("***** Eval results for {} *****".format(kind))
         for key in sorted(result.keys()):
             self.logger.info("  %s = %s", key, str(result[key]))
 
-    def log_train(self, step, loss, preds, labels):
+    def log_train(self, step, loss, result, metric):
         if self.log_interval > 0 and self.global_step % self.log_interval == 0:
             log_str = 'Step {:>6d} | Loss {:5.4f}'.format(step, loss)
             self.add_scalar('train', 'loss', loss, self.global_step)
 
             if self.verbose:
-                result, metric = quantify(self.args, preds, labels)
                 value = round(result[metric], 3)
                 log_str += f" | {metric} {value}"
                 self.add_scalar('train', metric.lower(), value, self.global_step)
             self.logger.info(log_str)
 
         self.global_step += 1
-
 
     def log_dev(self, step, metric, value):
         self.eval_step += 1

@@ -17,6 +17,11 @@ def load_data(args, already_cached):
     raw_data = json.load(open(data_path, 'r'))
     return raw_data
 
+def load_guidelines():
+  kb = json.load(open('data/kb.json', 'r'))
+  ont = json.load(open('data/ontology.json', 'r'))
+  return kb, ont
+
 def load_candidates(args):
   # The raw agent utterances that are used as candidates when performing utterance ranking
   utt_texts = json.load(open(f'{args.input_dir}/utterances.json', 'r'))

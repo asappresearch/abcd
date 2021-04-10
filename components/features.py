@@ -1,3 +1,4 @@
+
 class InputExample(object):
   """A single training/test example for simple sequence classification."""
 

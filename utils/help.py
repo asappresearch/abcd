@@ -30,6 +30,8 @@ def check_cache(args, cache_dir):
   cache_filename = f"{args.model_type}_{args.task}"
   if args.cascade:
     cache_filename += "_cascade"
+  if args.use_intent:
+    cache_filename += "_intent"
   cache_path = os.path.join(cache_dir, cache_filename)
 
   if os.path.exists(cache_path):
@@ -51,7 +53,7 @@ def check_directories(args):
                 print(f"Warning: {directory} exists and files may be overwritten")
         else: 
             print(f"Creating {directory} directory ...")
-            os.mkdir(directory)
+            os.makedirs(directory)
 
     cache_results = check_cache(args, cache_dir)
     return ckpt_dir, cache_results

@@ -89,7 +89,7 @@ class BaseProcessor(object):
     # Account for [CLS] and [SEP] with "- 2" and with "- 3" for RoBERTa.
     effective_max = args.max_seq_len - special_tokens_count
     cls_token_segment_id = 0
-    sequence_a_segment_id = 1
+    sequence_a_segment_id = 0 if args.model_type == 'roberta' else 1
     pad_token_segment_id = 0
 
     self.special = {

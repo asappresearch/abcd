@@ -1,1 +1,0 @@
-python main.py --batch-size 5 --do-eval --filename fake --task ast --version 1.5 --debug

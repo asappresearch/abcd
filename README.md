@@ -21,6 +21,8 @@ All code is run by executing the corresponding command within the shell script `
 ### Preparation
 Raw data will be loaded from the data folder and prepared into features that are placed into Datasets.  If this has already occured, then the system will instead read in the prepared features from cache.
 
+If running CDS for the first time, uncomment out the code within the run script to execute `embed.py` which will prepare the utterances for ranking.  
+
 ### Training
 To specify the task for training, simply use the `--task` option with either `ast` or `cds`, for Action State Tracking and Cascading Dialogue Success respectively.  Options for different model types are `bert`, `albert` and `roberta`.  Loading scripts can be tuned to offer various other behaviors.
 

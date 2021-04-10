@@ -4,7 +4,6 @@ import math
 import numpy as np
 import GPUtil
 
-import faiss
 import torch
 from torch import nn
 from torch import optim
@@ -30,19 +29,19 @@ class CoreModel(nn.Module):
   def forward(self):
     raise NotImplementedError
 
-  def save_pretrained(self):
-    torch.save(self.state_dict(), self.checkpoint_dir)
-    print(f"Model weights saved in {self.checkpoint_dir}")
+  def save_pretrained(self, filepath=None):
+    if filepath is None:
+      filepath = os.path.join(self.checkpoint_dir, 'pytorch_model.pt')
+    torch.save(self.state_dict(), filepath)
+    print(f"Model weights saved in {filepath}")
 
   @classmethod
-  def from_pretrained(cls, hidden_dim, ontology_size, base_model, device, checkpoint_dir):
+  def from_pretrained(cls, hidden_dim, ontology_size, base_model, device, filepath=None):
     # Instantiate model.
     model = cls(hidden_dim, ontology_size, base_model, device)
-    # Modify for cascading evaluation
-    if 'cascade' in checkpoint_dir:
-      checkpoint_dir = checkpoint_dir.replace('cascade_', '')
     # Load weights and fill them inside the model
-    filepath = os.path.join(checkpoint_dir, 'pytorch_model.pt')
+    if filepath is None:
+      filepath = os.path.join(self.checkpoint_dir, 'pytorch_model.pt')
     model.load_state_dict(torch.load(filepath))
     model.eval()
     print(f"Model loaded from {filepath}")

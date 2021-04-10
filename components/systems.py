@@ -31,18 +31,13 @@ class Application(object):
     self.so_far = []  # hold a list of context utterances
     self.action_taken = False
 
-    self.prepare_masks()
+    kb = json.load( open("data/kb.json", "r"))
+    action_mask_map, intent_mask_map = Application.prepare_masks(kb, ontology)
+    self.action_mask_map = action_mask_map
+    self.intent_mask_map = intent_mask_map
 
-  def prepare_masks(self):
-    ont = json.load(open('data/ontology.json', 'r'))
-    # counter = 0
-    # for flow, subflows in ont['intents']['subflows'].items():
-    #   for sf in subflows:
-    #       counter += 1
-    # print(counter)
-
-    kb = json.load(open('data/kb.json', 'r'))
-
+  @staticmethod
+  def prepare_masks(kb, ont):
     # record the range that needs to be masked out
     val_group_to_range = {}
     current_idx = 0
@@ -65,7 +60,7 @@ class Application(object):
         current_idx = stop
 
     # build out the action to values mapping
-    self.action_mask_map = {}
+    action_mask_map = {}
     for category, acts in ont['actions'].items():
         for action, values in acts.items():
             mask = np.zeros(100 + num_enumerable_vals)
@@ -76,7 +71,7 @@ class Application(object):
                     start, stop = val_group_to_range[val_group]
                     mask[start:stop] = 1.0
 
-            self.action_mask_map[action] = mask
+            action_mask_map[action] = mask
 
     # recreate the exact breakdown order from the loader
     options = []
@@ -96,7 +91,7 @@ class Application(object):
     # make the reverse lookup for the id that needs to be masked out
     action_to_idx = {action: index for index, action in enumerate(options)}
     # create the actual intent to action mapping
-    self.intent_mask_map = {}
+    intent_mask_map = {}
     for flow, subflows in ont['intents']['subflows'].items():
         for intent in subflows:
             mask = np.zeros(30)
@@ -105,7 +100,9 @@ class Application(object):
             for action in valid_options:
                 mask[action_to_idx[action]] = 1.0
 
-            self.intent_mask_map[intent] = mask
+            intent_mask_map[intent] = mask
+
+    return action_mask_map, intent_mask_map
 
   def delexicalize_text(self, scene, conversation):
     """ Given all the utterances within a converation and the scenario, delexicalize the 
