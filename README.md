@@ -36,6 +36,7 @@ Each split is a list of conversations, where each conversation is a dict contain
   - _scenario_: the ground truth scenario used to generate the prompt
   - _original_: the raw conversation of speaker and utterances as a list of tuples
   - _delexed_: the delexicalized conversation used for training and evaluation, see below for details
+
 We provide the delexed version so new models performing the same tasks have comparable pre-processing.  The original data is also provided in case you want to use the utterances for some other purpose.
 
 For a quick preview, a small sample of chats is provided to help get started. Concretely, `abcd_sample.json` is a list containing three random conversations from the training set.
@@ -46,6 +47,9 @@ Each scene dict contains details about the customer setup along with the underly
   - _Order_: order info related to what the customer purchased or would like to purchase.  Includes address, num_products, order_id, product names, and image info
   - _Product_: product details if applicable, includes brand name, product type and dollar amount
   - _Flow_ and _Subflow_: these represent the ground truth user intent.  They are used to generate the prompt, but are not shown directly the customer.  The job of the agent is to infer this (latent) intent and then match against the Agent Guidelines to resolve the customer issue.
+
+### Guidelines
+The agent guidelines are offered in their original form within a Google Doc as listed in `guidelines.txt`.  This can be transformed into a formatted document for parsing by a model.  The intents with their button actions about found within `kb.json`.  Lastly, the breakdown of all flows, subflows, and actions are found within `ontology.json`.
 
 ### Conversation
 Each conversation is made up of a list of turns.  Each turn is a dict with five parts:
