@@ -1,0 +1,571 @@
+{"Product Defect": {
+	"description": "refunds and returns",
+	"subflows": {
+		"Initiate Refund": {"actions": [
+				{"type": "interaction", "button": "Pull up Account", "text": "All chats in this flow start by asking the customer for their full name or Account ID using [Pull up Account].  This will pull up their account in the background with the right information related to this user.", "subtext": []},
+				{"type": "kb query", "button": "Validate Purchase", "text": "To confirm that their purchase is valid with [Validate Purchase]:", "subtext": ["Username - occasionally, the customer may not remember their username.  In this case, use the Recover Username subflow in the Account Access flow", "Email Address", "Order ID - last item, to be consistent with verify identity"]},
+				{"type": "interaction", "button": "Record Reason", "text": "Refund method in [Record Reason] - valid options are", "subtext": ["Gift card - they want a prepaid gift card, also ask for their address so you know where to mail it.  Enter this value in the next step.", "Add value - to add value to their account.", "Paper check - also ask for their address so you know where to mail the check.  Enter this address in the next step.", "Credit card - direct refund to their credit card, assume a credit card is already on file.  To find it, you will need the account ID, which is entered in the next step."]},
+				{"type": "interaction", "button": "Enter Details", "text": "Add in additional information using [Enter Details]", "subtext": ["If the customer chose gift card or paper check then enter the full address", "If the customer chose add value or credit card then enter the account ID"]},
+				{"type": "interaction", "button": "Offer Refund", "text": "Dollar amount - enter this value into the details form (without the dollar sign)", "subtext": ["Then click [Offer Refund]", "If the customer does not know, the default amount is $50"]}
+			],
+			"instructions": ["Start by asking for the refund reason.  Then, to complete the refund, perform the following actions",
+											"As always, wrap up by nicely asking if the customer needs any further assistance."]
+		},
+		"Update Refund": {"actions": [
+				{"type": "interaction", "button": "Pull up Account", "text": "Get Full Name or Account ID for [Pull up Account]", "subtext": []},
+				{"type": "kb query", "button": "Validate Purchase", "text": "Confirm that their purchase is valid with [Validate Purchase]:", "subtext": ["Username - occasionally, the customer may not remember their username.  In this case, use the Recover Username subflow in the Account Access flow", "Email Address", "Order ID - you may have gotten this already to perform the status check"]},
+				{"type": "interaction", "button": "Record Reason", "text": "Find out the new item they want to return:", "subtext": ["Get the brand and type, such as 'Old Navy Socks' or 'Nike Shoes'", "Enter this into the input box and [Record Reason]"]},
+				{"type": "interaction", "button": "Offer Refund", "text": "Get the dollar amount to refund", "subtext": ["Ask for the price of the product from the customer", "The total refund is the amount of their previous refund plus their current one. > ie. if their old amount is $100 and their new item is $30, then the total is '130'", "Enter the amount (without dollar sign) and then click [Offer Refund]"]}
+			],
+			"instructions": ["The customer is adding an extra item to their existing refund.  If you have not yet gotten it, ask the customer for their reason for refunding.",
+											"As always, wrap up by nicely asking if the customer needs any further assistance."]
+		},
+		"Refund Status": {"actions": [
+				{"type": "interaction", "button": "Pull up Account", "text": "Get Full Name or Account ID for [Pull up Account]", "subtext": []},
+				{"type": "kb query", "button": "Validate Purchase", "text": "Gather details to find the appropriate order:", "subtext": ["Username - first", "Email Address - second", "Order ID - third", "Then use a KB query to [Validate Purchase]"]},
+				{"type": "communication", "button": "N/A", "text": "Respond with the information to the customer in natural language", "subtext": ["Pick a refund status from the list of three options > not started, in progress, complete", "Tell the customer this is their refund status", "Pick a payment method from the following three options > online, by phone, by chat", "Tell the customer this is how they initiated that refund (i.e their payment method)"]},
+				{"type": "interaction", "button": "Notify Internal Team", "text": "If the customer is not satisfied with your answer, and would like to change their refund", "subtext": ["If they do not like the status: > Enter 'manager' into [Notify Internal Team] > Explain that you have escalated the issue to the manager", "If they do not like the payment method: > Enter “change method” into [Update Order]"]}
+			],
+			"instructions": ["Customers want to know the status and payment method of their refund.  In this case:",
+											"As usual, end by asking if the customer needs anything else."]
+		},
+		"Return Due to Stain": {"actions": [
+				{"type": "interaction", "button": "Pull up Account", "text": "Get Full Name or Account ID for [Pull up Account]", "subtext": []},
+				{"type": "kb query", "button": "Validate Purchase", "text": "Confirm that their purchase is valid with [Validate Purchase]", "subtext": ["Username - occasionally, the customer may not remember their username.  In this case, use the Recover Username subflow in the Account Access flow", "Email Address", "Order ID"]},
+				{"type": "faq/policy", "button": "Membership Privileges", "text": "Confirm their order can be returned, by checking their membership level.", "subtext": ["Gold members: > Gold members get unlimited returns", "Silver members: > Ask for the purchase date, return possible within the last 6 months <or> Ask if they have a receipt, get to return if user has receipt <or> Ask if in original packaging, get to return if in original packaging", "Bronze members: > Ask for the purchase date, return possible within the last 90 days <or> Ask if they have a receipt, get to return if user has receipt <or> Ask if in original packaging, get to return if in original packaging", "Guest members: > Ask for the purchase date, return possible within the last 30 days <or> Ask if they have a receipt, get to return if user has receipt", "Enter the member level and then click the [Membership Privileges] option"]},
+				{"type": "communication", "button": "End Conversation", "text": "Communication", "subtext": ["If the customer can return, tell them the good news and go to the next step", "If the customer cannot return, apologize and explain the problem. Then [End Conversation]"]},
+				{"type": "interaction", "button": "Enter Details", "text": "Since the customer will print out a shipping label for the return, you need their full address.  You can give this explanation if the customer asks why you need the address.", "subtext": ["Street Number and Street Name", "City, State, Zip Code", "Fill this as one line into [Enter Details]"]},
+				{"type": "interaction", "button": "Update Order", "text": "Ask the customer how they would like to process their return:", "subtext": ["Options include: 'By Mail', 'In Store', or 'Drop off Center'", "Fill in the form with one of these three values and submit to [Update Order]"]}
+			],
+			"instructions": ["In all three cases for return, follow the same set of actions:",
+											"As usual, end by asking if the customer needs any other assistance."]
+		},
+		"Return Due to Color": {"actions": [
+				{"type": "interaction", "button": "Pull up Account", "text": "Get Full Name or Account ID for [Pull up Account]", "subtext": []},
+				{"type": "kb query", "button": "Validate Purchase", "text": "Confirm that their purchase is valid with [Validate Purchase]", "subtext": ["Username - occasionally, the customer may not remember their username.  In this case, use the Recover Username subflow in the Account Access flow", "Email Address", "Order ID"]},
+				{"type": "faq/policy", "button": "Membership Privileges", "text": "Confirm their order can be returned, by checking their membership level.", "subtext": ["Gold members: > Gold members get unlimited returns", "Silver members: > Ask for the purchase date, return possible within the last 6 months <or> Ask if they have a receipt, get to return if user has receipt <or> Ask if in original packaging, get to return if in original packaging", "Bronze members: > Ask for the purchase date, return possible within the last 90 days <or> Ask if they have a receipt, get to return if user has receipt <or> Ask if in original packaging, get to return if in original packaging", "Guest members: > Ask for the purchase date, return possible within the last 30 days <or> Ask if they have a receipt, get to return if user has receipt", "Enter the member level and then click the [Membership Privileges] option"]},
+				{"type": "communication", "button": "End Conversation", "text": "Communication", "subtext": ["If the customer can return, tell them the good news and go to the next step", "If the customer cannot return, apologize and explain the problem. Then [End Conversation]"]},
+				{"type": "interaction", "button": "Enter Details", "text": "Since the customer will print out a shipping label for the return, you need their full address.  You can give this explanation if the customer asks why you need the address.", "subtext": ["Street Number and Street Name", "City, State, Zip Code", "Fill this as one line into [Enter Details]"]},
+				{"type": "interaction", "button": "Update Order", "text": "Ask the customer how they would like to process their return:", "subtext": ["Options include: 'By Mail', 'In Store', or 'Drop off Center'", "Fill in the form with one of these three values and submit to [Update Order]"]}
+			],
+			"instructions": ["In all three cases for return, follow the same set of actions:",
+											"As usual, end by asking if the customer needs any other assistance."]
+		},
+		"Return Due to Size": {"actions": [
+				{"type": "interaction", "button": "Pull up Account", "text": "Get Full Name or Account ID for [Pull up Account]", "subtext": []},
+				{"type": "kb query", "button": "Validate Purchase", "text": "Confirm that their purchase is valid with [Validate Purchase]", "subtext": ["Username - occasionally, the customer may not remember their username.  In this case, use the Recover Username subflow in the Account Access flow", "Email Address", "Order ID"]},
+				{"type": "faq/policy", "button": "Membership Privileges", "text": "Confirm their order can be returned, by checking their membership level.", "subtext": ["Gold members: > Gold members get unlimited returns", "Silver members: > Ask for the purchase date, return possible within the last 6 months <or> Ask if they have a receipt, get to return if user has receipt <or> Ask if in original packaging, get to return if in original packaging", "Bronze members: > Ask for the purchase date, return possible within the last 90 days <or> Ask if they have a receipt, get to return if user has receipt <or> Ask if in original packaging, get to return if in original packaging", "Guest members: > Ask for the purchase date, return possible within the last 30 days <or> Ask if they have a receipt, get to return if user has receipt", "Enter the member level and then click the [Membership Privileges] option"]},
+				{"type": "communication", "button": "End Conversation", "text": "Communication", "subtext": ["If the customer can return, tell them the good news and go to the next step", "If the customer cannot return, apologize and explain the problem. Then [End Conversation]"]},
+				{"type": "interaction", "button": "Enter Details", "text": "Since the customer will print out a shipping label for the return, you need their full address.  You can give this explanation if the customer asks why you need the address.", "subtext": ["Street Number and Street Name", "City, State, Zip Code", "Fill this as one line into [Enter Details]"]},
+				{"type": "interaction", "button": "Update Order", "text": "Ask the customer how they would like to process their return:", "subtext": ["Options include: 'By Mail', 'In Store', or 'Drop off Center'", "Fill in the form with one of these three values and submit to [Update Order]"]}
+			],
+			"instructions": ["In all three cases for return, follow the same set of actions:",
+											"As usual, end by asking if the customer needs any other assistance."]
+		}
+	}},
+"Order Issue": {
+	"description": "get status of an order or change an order, possibly shipping",
+	"subflows": {
+		"Status Mystery Fee": {"actions": [
+				{"type": "interaction", "button": "Pull up Account", "text": "Get Full Name or Account ID for [Pull up Account]", "subtext": []},
+				{"type": "kb query", "button": "Verify Identity", "text": "Start by looking up the order using the [Verify Identity] fields.", "subtext": ["Full name - may have gotten this earlier", "Account ID - may have gotten this earlier", "Order ID"]},
+				{"type": "kb query", "button": "Ask the Oracle", "text": "To decide whether or not this is a valid error:", "subtext": ["Check if the company made error by 'Asking the Oracle' which will return Yes or No", "If this was a company mistake (Oracle says Yes), skip the next step", "Make sure to explain the result in natural language."]},
+				{"type": "faq/policy", "button": "Membership Privileges", "text": "If Oracle Says No, this means the customer possibly made an error", "subtext": ["Ask the customer for their membership level and enter into [Membership Privileges]", "If Gold or Silver: > We trust our gold and silver members.  Thus, they will always get their extra fees removed.  Go to next step.", "If Guest or Bronze: > Then this is a customer error, and the extra fee stays. You cannot do anything > Apologize for the issue and [End Conversation]"]},
+				{"type": "interaction", "button": "Update Order", "text": "Offer to remove fee (only for Gold or Silver member)", "subtext": ["Confirm the amount that the customer felt was overcharged", "Enter this value (without dollar sign) and select [Update Order]"]}
+			],
+			"instructions": ["The customer believes an extra charge has been added to their order.",
+											"If the fee cannot be removed, then apologize to the customer.  Make up some reason why the price was high (i.e. there was a price surge at that time), and remember to mark the conversation as complete, but not successful in the survey."]
+		},
+		"Status Delivery Time": {"actions": [
+				{"type": "interaction", "button": "Pull up Account", "text": "Get Full Name or Account ID for [Pull up Account]", "subtext": []},
+				{"type": "kb query", "button": "Verify Identity", "text": "Start by looking up the order using the [Verify Identity] fields.", "subtext": ["Full name - may have gotten this earlier", "Account ID - may have gotten this earlier", "Order ID"]},
+				{"type": "kb query", "button": "Ask the Oracle", "text": "To decide whether or not this is a valid error:", "subtext": ["Check if the company made error by 'Asking the Oracle' which will return Yes or No", "If this was a company mistake (Oracle says Yes), skip the next step", "Make sure to explain the result in natural language."]},
+				{"type": "interaction", "button": "Shipping Status", "text": "If Oracle Says No, this means the customer possibly made an error", "subtext": []},
+				{"type": "interaction", "button": "Update Order", "text": "x", "subtext": []}
+			],
+			"instructions": ["The customer believes the delivery time is wrong and wants to move from morning to evening.  If the customer is just confirming a date, then the flow might be Shipping Issue > Status instead.",
+							"If the delivery cannot be changed, then apologize to the customer and remember to mark the conversation as complete, but not successful in the survey."]
+		},
+		"Status Payment Method": {"actions": [
+				{"type": "interaction", "button": "Pull up Account", "text": "Get Full Name or Account ID for [Pull up Account]", "subtext": []},
+				{"type": "kb query", "button": "Verify Identity", "text": "Start by looking up the order using the [Verify Identity] fields.", "subtext": ["Full name - may have gotten this earlier", "Account ID - may have gotten this earlier", "Order ID"]},
+				{"type": "interaction", "button": "Shipping Status", "text": "Find out whether the item has already shipped.", "subtext": ["Ask for the shipping status from the customer and enter into [Shipping Status]", "If the item is 'Order Received' or 'In Transit', then you can change the payment method immediately (go to the next step).", "If the item is 'Out for Delivery' or 'Delivered' then the new payment method only applies to future orders (explain to the customer and see if they still want to change payment method)."]},
+				{"type": "interaction", "button": "Update Order", "text": "Change the payment method", "subtext": ["Enter in the new, desired payment method which can be credit card, debit card or paypal", "Select the [Update Order] option with the new payment method"]}
+			],
+			"instructions": ["The customer believes the payment method is wrong.  Valid payment methods are credit card, debit card and PayPal.  The customer may want to change their payment method.",
+							"Whether or not the conversation is successful depends on how happy you think the customer ended up. There is no right or wrong answer, just make your best judgement."]
+		},
+		"Status Quantity": {"actions": [
+				{"type": "interaction", "button": "Pull up Account", "text": "Get Full Name or Account ID for [Pull up Account]", "subtext": []},
+				{"type": "kb query", "button": "Verify Identity", "text": "Start by looking up the order using the [Verify Identity] fields.", "subtext": ["Full name - may have gotten this earlier", "Account ID - may have gotten this earlier", "Order ID"]},
+				{"type": "kb query", "button": "Ask the Oracle", "text": "To decide whether or not this is a valid error:", "subtext": ["Check if the email is accurate by 'Asking the Oracle' which will return Yes or No", "If the email was wrong (Oracle returns No), then assure the customer that they were only charged for one item and that the email was wrong. Skip the following steps and [End Conversation] after explaining.", "If the email was right (Oracle returns Yes), then it is a company mistake.  Continue to the next step below."]},
+				{"type": "interaction", "button": "Shipping Status", "text": "(Only if Oracle says Yes) Find out whether the item has already shipped.", "subtext": ["Ask for the shipping status from the customer and then submit using [Shipping Status]", "If the item is Order Received, then immediately offer the refund and tell the customer the unwanted item has been removed from their order.", "If the item is 'In Transit', 'Out for Delivery' or 'Delivered' then they must wait until the item arrives and call back to customer support to start the return process."]},
+				{"type": "interaction", "button": "Offer Refund", "text": "(Only if Oracle says Yes) Find out how much the item cost", "subtext": ["Ask the customer how much is the cost of the item meant to be returned", "Enter that into the form and select the [Offer Refund] option"]}
+			],
+			"instructions": ["The email confirmation of the order does not match the desired order quantity.",
+							"Whether or not the conversation is successful depends on how happy you think the customer ended up. There is no right or wrong answer, just make your best judgement."]
+		},
+		"Manage Upgrade": {"actions": [
+				{"type": "interaction", "button": "Pull up Account", "text": "Get Full Name or Account ID for [Pull up Account]", "subtext": []},
+				{"type": "kb query", "button": "Verify Identity", "text": "Start by looking up the order using the [Verify Identity] fields.", "subtext": ["Full name - may have gotten this earlier", "Account ID - may have gotten this earlier", "Order ID"]},
+				{"type": "interaction", "button": "Shipping Status", "text": "Find out whether the item has already shipped.", "subtext": ["Ask for the shipping status from customer, and enter into [Shipping Status] > Possible options: ['Order Received', 'In Transit', 'Out for Delivery', 'Delivered']", "If the item is 'Order Received' > Then the company has received the order, but the item has not yet shipped > Move onto the next step", "If the item is 'In Transit', 'Out for Delivery', or 'Delivered' then it is too late > The item has already shipped and the date cannot be altered > However, this means the item will likely arrive today or tomorrow anyway > Explain this to the customer and [End Conversation]"]},
+				{"type": "faq/policy", "button": "Membership Privileges", "text": "Find out how much the extra fee will be for upgraded overnight shipping", "subtext": ["Ask the customer for their membership level.  Type it into the field and then select the [Membership Privileges] option.", "Gold members: > Gold members have their fee waived", "Guest, Bronze or Silver members: > Ask them if they can charge $20 to the credit card on their account > The answer should be yes, since that is the only way to pay"]},
+				{"type": "interaction", "button": "Update Order", "text": "Finally, you want to upgrade their shipping time.", "subtext": ["Enter 'tomorrow' and then select [Update Order]"]}
+			],
+			"instructions": ["The customer wants to upgrade to overnight shipping.",
+							"If the shipping date cannot be changed, then apologize to the customer and remember to mark the conversation as complete, but not successful in the survey."]
+		},
+		"Manage Downgrade": {"actions": [
+				{"type": "interaction", "button": "Pull up Account", "text": "Get Full Name or Account ID for [Pull up Account]", "subtext": []},
+				{"type": "kb query", "button": "Verify Identity", "text": "Start by looking up the order using the [Verify Identity] fields.", "subtext": ["Full name - may have gotten this earlier", "Account ID - may have gotten this earlier", "Order ID"]},
+				{"type": "interaction", "button": "Shipping Status", "text": "Find out whether the item has already shipped.", "subtext": ["Ask for the shipping status from customer, and enter into [Shipping Status] > Possible options: ['Order Received', 'In Transit', 'Out for Delivery', 'Delivered']", "If the item is 'Order Received' > Then the company has received the order, but the item has not yet shipped > Move onto the next step", "If the item is 'In Transit', 'Out for Delivery', or 'Delivered' then it is too late > The item has already shipped and the date cannot be altered > Then move onto the next step"]},
+				{"type": "faq/policy", "button": "Membership Privileges", "text": "Determine how to manage the shipping cost", "subtext": ["Find the membership level and enter into [Membership Privileges]", "If Gold, Silver or Bronze: > If not yet shipped, tell the customer you can delay the shipping date with no problem.  Then head to the next step. > If already shipped, tell the customer you can add a credit back to their account for the amount of the shipping fee.  Then  [End Conversation]", "If Guest member: > If not yet shipped, tell the customer you can delay the shipping date with no problem.  Then head to the next step. > If already shipped, tell the customer there is nothing you can do.  Apologize for any inconvenience and [End Conversation]"]},
+				{"type": "interaction", "button": "Update Order", "text": "If the item has not yet been shipped, then you can change it", "subtext": ["Enter 'next week' into the field and [Update Order]", "Finally ask if they need anything else and [End Conversation]"]}
+			],
+			"instructions": ["The customer wants to downgrade to next week delivery to save on shipping fees.  If the customer wants a refund it is likely Shipping Issue > Shipping Cost instead.",
+							"Whether or not the conversation is successful depends on how happy you think the customer ended up. There is no right or wrong answer, just make your best judgement."]
+		},
+		"Manage Create": {"actions": [
+				{"type": "interaction", "button": "Pull up Account", "text": "Get Full Name or Account ID for [Pull up Account]", "subtext": []},
+				{"type": "kb query", "button": "Verify Identity", "text": "Start by looking up the order using the [Verify Identity] fields.", "subtext": ["Full name - may have gotten this earlier", "Account ID - may have gotten this earlier", "Order ID"]},
+				{"type": "interaction", "button": "Shipping Status", "text": "Find out whether the item has already shipped.", "subtext": ["Ask the customer for the shipping status, and enter into [Shipping Status]", "If the item is Order Received, then skip the next step and directly update the order.", "If the item is 'In Transit', 'Out for Delivery', or 'Delivered' then it is too late.  Move to the next step (membership level)."]},
+				{"type": "faq/policy", "button": "Membership Privileges", "text": "Silver and Gold members get special treatment.  Ask the customer for their membership level, if they qualify:", "subtext": ["Enter the Gold or Silver level.  Their existing order is already out for delivery, so instead you will ship the new item to them ASAP in a separate order with no shipping fee.", "Choose the [Membership Privileges] option"]},
+				{"type": "interaction", "button": "Make Purchase", "text": "To add to an item to the order you will need to enter its name", "subtext": ["Enter a phrase of brand and item, such as 'Guess Jeans' or 'Calvin Klein Shirt'", "Then select [Make Purchase]"]}
+			],
+			"instructions": ["The customer wants to add something to their existing order.",
+							"If the new item cannot be added to the order, then apologize to the customer and remember to mark the conversation as complete, but not successful in the survey."]
+		},
+		"Manage Cancel": {"actions": [
+				{"type": "interaction", "button": "Pull up Account", "text": "Get Full Name or Account ID for [Pull up Account]", "subtext": []},
+				{"type": "kb query", "button": "Verify Identity", "text": "Start by looking up the order using the [Verify Identity] fields.", "subtext": ["Full name - may have gotten this earlier", "Account ID - may have gotten this earlier", "Order ID"]},
+				{"type": "interaction", "button": "Shipping Status", "text": "Find out whether the item has already shipped.", "subtext": ["Ask customer for the shipping status and then submit using [Shipping Status]", "If the item is Order Received, then immediately offer the refund and tell the customer the unwanted item has been removed from their order.", "If the item is 'In Transit', 'Out for Delivery' or 'Delivered' then check their membership level (next step)."]},
+				{"type": "faq/policy", "button": "Membership Privileges", "text": "Ask the customer for their membership level.", "subtext": ["If they are bronze, silver or gold: > Enter Gold or Silver, depending on the level into the text box > Click the [Membership Privileges] option > Tell them you can offer a refund immediately.  After the item arrives, the customer should then call back to customer support to get the shipping label for return.", "If they are a Guest customer, then they must wait until the item arrives and call back to customer support to start the return process. [End Conversation] after communicating the above."]},
+				{"type": "interaction", "button": "Offer Refund", "text": "Find out how much the item cost that is meant to be returned", "subtext": ["Enter the amount in the box", "Select the [Offer Refund] option"]}
+			],
+			"instructions": ["The customer accidentally ordered two items when they meant to order just one.",
+							"Whether or not the conversation is successful depends on how happy you think the customer ended up. There is no right or wrong answer, just make your best judgement."]
+		}
+	}},
+"Account Access": {
+	"description": "username, password, and two-factor authentication",
+	"subflows": {
+		"Recover Username": {"actions": [
+				{"type": "interaction", "button": "Pull up Account", "text": "Ask the customer for their Full name or Account ID with [Pull up Account].   This loads information in the background related to this user.", "subtext": []},
+				{"type": "kb query", "button": "Verify Identity", "text": "Ask the customer for 3 out of 4 items below and use the [Verify Identity] button", "subtext": ["Full name - first and last", "Zip Code", "Phone number", "Email Address"]},
+				{"type": "communication", "button": "N/A", "text": "You make up their username with the first letter of their first name, their last name with a 1", "subtext": ["For example: John Smith → jsmith1", "For example: Wendy Chesterfield → wchesterfield1", "If you are here as part of [Validate Purchase] action or some external flow assume this new username is correct even if the system says it is not valid, and just continue forward with the conversation"]}
+			],
+			"instructions": ["To get their username, you must",
+							"That’s it. This flow is very short and often occurs in conjunction with other flows."]
+		},
+		"Recover Password": {"actions": [
+				{"type": "interaction", "button": "Pull up Account", "text": "Get Full Name or Account ID for [Pull up Account]", "subtext": []},
+				{"type": "interaction", "button": "Enter Details", "text": "Get the customer’s username to check their identity", "subtext": ["If they don’t have their username, then follow the 'Recover Username' flow above", "Once you have it, enter the username and click on [Enter Details]"]},
+				{"type": "communication", "button": "N/A", "text": "Tell the customer you cannot get their password, but you can generate a new one for them.", "subtext": []},
+				{"type": "kb query", "button": "Make Password", "text": "To operate the [Make Password] action, you will first need:", "subtext": ["Pin Number <or> answer to the Security Question", "Enter either value into the box and then click the [Make Password] button"]}
+			],
+			"instructions": ["Help the customer get a new password",
+							"Share the password with the customer."]
+		},
+		"Reset Two-Factor Auth": {"actions": [
+				{"type": "interaction", "button": "Pull up Account", "text": "Get Full Name or Account ID for [Pull up Account]", "subtext": []},
+				{"type": "interaction", "button": "Enter Details", "text": "You will need their email address so you can email them the reset code:", "subtext": ["Enter their email address with the [Enter Details] action", "If they don’t have their email address, you can bypass this problem by getting one of the following two items: > Ask for their PIN number > Tell them you are going to ask the security question, which is 'What is your mother’s maiden name?'", "Then submit that value into the [Enter Details] form instead.  Tell them that you will send the reset code to the email address saved on file.  Feel free to make up an email address if the customer asks for it."]},
+				{"type": "interaction", "button": "Send Link", "text": "Inform the customer that to be safe, they should also follow best practices for security.", "subtext": ["Tell them you will send a link about security best practices", "Then click the [Send Link] button, you do not need to enter anything into the form"]}
+			],
+			"instructions": ["Let the customer know that to reset, you will be sending a special code to their email.  To proceed:",
+							"If the customer does not seem satisfied, then mark the conversation as not successful when filling out the survey."]
+		}
+	}},
+"Troubleshoot Site": {
+	"description": "website slow, search not working, credit card, cart not updating",
+	"subflows": {
+		"Invalid Credit Card": {"actions": [
+				{"type": "faq/policy", "button": "Try Again", "text": "Option 1", "subtext": ["Instruct the customer to try entering their credit card information again", "Choose the [Try Again] option as your action. Nothing to enter in the form."]},
+				{"type": "faq/policy", "button": "Log Out/In", "text": "Option 2", "subtext": ["Instruct the customer to log out of their account and log back in.", "Choose the [Log Out/In] option as your action.  Nothing to enter in the form."]},
+				{"type": "interaction", "button": "Enter Details", "text": "Option 3", "subtext": ["Have the customer check the expiration date, maybe the credit card is too old", "Enter 'troubleshoot' into the form and choose the [Enter Details] option as your action."]},
+				{"type": "interaction", "button": "Make Purchase", "text": "Option 4 - Make the purchase for the customer.  To do this:", "subtext": ["Start by asking for the customer’s credit card number", "Then ask for the expiration date", "Enter a phrase of brand and item, such as 'Guess Jeans' or 'Calvin Klein Shirt'", "Then select [Make Purchase]"]}
+			],
+			"instructions": ["Customer’s credit card keeps getting rejected and is considered invalid.  Choose these in any order.",
+							"Please do both (A) give instructions in your own words without copy/paste and (B) click the button in the right hand panel.  If nothing works, just apologize and end the conversation."]
+		},
+		"Cart Not Updating": {"actions": [
+				{"type": "faq/policy", "button": "Try Again", "text": "Option 1", "subtext": ["Instruct the customer to refresh the page and add the item again.", "Choose the [Try Again] option as your action. Nothing to enter in the form."]},
+				{"type": "faq/policy", "button": "Log Out/In", "text": "Option 2", "subtext": ["Instruct the customer to log out of their account and log back in.", "Choose the [Log Out/In] option as your action.  Nothing to enter in the form."]},
+				{"type": "interaction", "button": "Enter Details", "text": "Option 3", "subtext": ["Have the customer check whether the selected item is Out-of-Stock.  This will be listed on the bottom left-hand side of the product page.", "Enter 'troubleshoot' into the form and choose the [Enter Details] option as your action."]},
+				{"type": "interaction", "button": "Make Purchase", "text": "Option 4 - Make the purchase for the customer.  To do this:", "subtext": ["Start by asking for the customer’s credit card number", "Then ask for the expiration date", "Enter a phrase of brand and item, such as 'Guess Jeans' or 'Calvin Klein Shirt'", "Then select [Make Purchase]"]}
+			],
+			"instructions": ["The customer is trying to place an item in their shopping cart, but the cart is not updating.  Choose actions in any order you want.",
+							"Please do both (A) give instructions in your own words without copy/paste and (B) click the button in the right hand panel. If nothing works, just apologize and end the conversation."]
+		},
+		"Search Not Working": {"actions": [
+				{"type": "faq/policy", "button": "Log Out/In", "text": "Option 1", "subtext": ["Instruct the customer to log out of their account and log back in.", "Choose the [Log Out/In] option as your action.  Nothing to enter in the form."]},
+				{"type": "faq/policy", "button": "Instructions", "text": "Option 2", "subtext": ["Tell the customer to try clearing out their cookies.", "If the customer asks how: Cookies can be reset by checking the settings option in the browser and selecting 'More Details'", "Choose the [Instructions] option as your action. Nothing to enter in the form."]},
+				{"type": "interaction", "button": "Notify Internal Team", "text": "Option 3", "subtext": ["Let the customer know that you will write up a report and let the Website Team know about this, so they can do a better job.", "Enter 'website team' into the input box and [Notify Internal Team]"]},
+				{"type": "faq/policy", "button": "Try Again", "text": "Option 4", "subtext": ["Ask the customer what their original search item is.", "Have the customer search for a different product, such as 'Prada Handbag'.  If that search works, then try to search the original item again.", "Choose the [Try Again] option as your action."]},
+				{"type": "interaction", "button": "Make Purchase", "text": "Option 5 - Make the purchase for the customer.  To do this:", "subtext": ["Start by asking for the customer’s credit card number", "Then ask for the expiration date", "Enter a phrase of brand and item, such as 'Guess Jeans' or 'Calvin Klein Shirt'", "Then select [Make Purchase]"]}
+			],
+			"instructions": ["The search results keep showing 'No results found' no matter what the customer searches for.  Shuffle up the order in which you choose these actions.",
+							"Please do both (A) give instructions in your own words without copy/paste and (B) click the button in the right hand panel. If nothing works, just apologize and end the conversation."]
+		},
+		"Website Too Slow": {"actions": [
+				{"type": "interaction", "button": "Notify Internal Team", "text": "Option 1", "subtext": ["Let the customer know that you will write up a report about the slow speeds for the Website Team to fix.", "Enter 'website team' into the input box and [Notify Internal Team]"]},
+				{"type": "faq/policy", "button": "Log Out/In", "text": "Option 2", "subtext": ["Instruct the customer to log out of their account and log back in.", "Choose the [Log Out/In] option as your action.  Nothing to enter in the form."]},
+				{"type": "faq/policy", "button": "Try Again", "text": "Option 3", "subtext": ["Tell the customer to try visiting another website first.", "If all websites are slow, then it is the customer’s internet connection and not a problem with the AcmeCorp website.", "Choose the [Try Again] option as your action. Nothing to enter in the form."]},
+				{"type": "faq/policy", "button": "Instructions", "text": "Option 4", "subtext": ["Ask the customer to close all the other tabs on their browser. Also instruct them to close other programs that may be running.", "Explain that many programs running in the background can cause a slowdown.", "Choose the [Instructions] option as your action."]},
+				{"type": "interaction", "button": "Make Purchase", "text": "Option 5 - Make the purchase for the customer.  To do this:", "subtext": ["Start by asking for the customer’s credit card number", "Then ask for the expiration date", "Enter a phrase of brand and item, such as 'Guess Jeans' or 'Calvin Klein Shirt'", "Then select [Make Purchase]"]}
+			],
+			"instructions": ["The acmecorp.com website has slowed down to a crawl, making it unusable.  Pick these actions in any order you wish.  Feel free to be creative.",
+							"Please do both (A) give instructions in your own words without copy/paste and (B) click the button in the right hand panel. If nothing works, just apologize and end the conversation."]
+		}
+	}},
+"Manage Account": {
+	"description": "subscription service added or removed, change profile info",
+	"subflows": {
+		"Status Service Added": {"actions": [
+				{"type": "interaction", "button": "Pull up Account", "text": "Ask the customer for their Full name or Account ID with [Pull up Account].  This loads information in the background with information related to this user.", "subtext": []},
+				{"type": "interaction", "button": "Record Reason", "text": "Find out how the customer heard about this issue:", "subtext": ["Options are one of the three ['email', 'spouse', 'news']", "Enter this into the input box and [Record Reason]"]},
+				{"type": "kb query", "button": "Ask the Oracle", "text": "To decide whether or not this is a valid error:", "subtext": ["Tell the customer you will check your system about this problem.", "You do not have to enter anything into the field.", "Then [Ask the Oracle] if the customer made an error, which will return Yes or No"]},
+				{"type": "communication", "button": "N/A", "text": "If the customer is mistaken (Oracle says No), then explain:", "subtext": ["If the customer was sent an email > Let them know this was a scam email, and if they check the sender, it isn’t from the official AcmeCorp marketing team.", "If the customer was told this from their spouse > let them know they must have misheard.  They have nothing to worry about and there are no extra charges.", "If the customer saw this in the news > then let them know nicely that they must have misunderstood.   They have nothing to worry about and there are no extra charges."]},
+				{"type": "interaction", "button": "Update Account", "text": "If the customer is correct (Oracle says Yes), then remove the extra service", "subtext": ["Enter in 'remove service' and use the [Update Account] button.", "Tell the customer that the extra service has been removed."]},
+				{"type": "interaction", "button": "Offer Refund", "text": "If it is a legitimate error, then you can offer a refund to the customer", "subtext": ["The amount should be for $40", "Enter '40' in the field and then click on [Offer Refund]"]}
+			],
+			"instructions": ["The customer believes that an unknown service was added to their account.",
+							"If nothing works, just apologize and end the conversation."]
+		},
+		"Status Service Removed": {"actions": [
+				{"type": "interaction", "button": "Pull up Account", "text": "Get Full Name or Account ID for [Pull up Account]", "subtext": []},
+				{"type": "interaction", "button": "Record Reason", "text": "Find out how the customer heard about this issue:", "subtext": ["Options are one of the three ['email', 'spouse', 'news']", "Enter this into the input box and [Record Reason]"]},
+				{"type": "kb query", "button": "Ask the Oracle", "text": "To decide whether or not this is a valid error:", "subtext": ["Tell the customer you will check your system about this problem.", "Then [Ask the Oracle] if the customer is right, which will return Yes or No"]},
+				{"type": "communication", "button": "N/A", "text": "If the customer is mistaken (Oracle says No), then explain that there was a mistake:", "subtext": ["If the customer was sent an email > Let them know this was a scam email, and if they check the sender, it isn’t from the official AcmeCorp marketing team.", "If the customer was told this from their spouse > let them know they must have misheard.  They have nothing to worry about and there are no extra charges.", "If the customer saw this in the news > then let them know nicely that they must have misunderstood.   They have nothing to worry about and there are no extra charges."]},
+				{"type": "interaction", "button": "Update Account", "text": "If the customer is correct (Oracle says Yes), then reinstate the lost service", "subtext": ["Enter in 'add service' and click the [Update Account] button.", "Explain to the customer that their service has been reinstated."]},
+				{"type": "communication", "button": "N/A", "text": "Check that the service is now operational.  (i.e. 'Can you see the service properly activated on your account now?')", "subtext": ["If they say yes, then wonderful! You are done.", "If they say no, then tell them it may take a few minutes.  Then proceed to ask if they need anything else."]}
+			],
+			"instructions": ["The customer believes that an important service was mistakenly removed from their plan.",
+							"Remember to always end the conversations by asking if they need anything else.  If nothing works, just apologize and end the conversation."]
+		},
+		"Status Shipping Question": {"actions": [
+				{"type": "interaction", "button": "Pull up Account", "text": "Get Full Name or Account ID for [Pull up Account]", "subtext": []},
+				{"type": "kb query", "button": "Ask the Oracle", "text": "To decide whether or not this is a valid error:", "subtext": []},
+				{"type": "interaction", "button": "Send Link", "text": "x", "subtext": []}
+			],
+			"instructions": ["Customer has a question about their account.  Namely, they want to know if the account allows them free shipping to/ from out of the country. This might be also phrased as international shipping.",
+							"If you would like, you can message the customer with 'www.AcmeBrands.com/faq/subscription' as the fake link.  Remember to end the conversation by asking if they need anything else."]
+		},
+		"Status Credit Missing": {"actions": [
+				{"type": "interaction", "button": "Pull up Account", "text": "Get Full Name or Account ID for [Pull up Account]", "subtext": []},
+				{"type": "interaction", "button": "Record Reason", "text": "Find out where the credits originated from.  Apologize for any inconvenience.", "subtext": ["Options include ['subscription refund', 'previous purchase', 'promotional package']", "Enter this into the input box and [Record Reason]"]},
+				{"type": "kb query", "button": "Ask the Oracle", "text": "To decide whether or not this is a valid error:", "subtext": ["Check if missing credit is accurate by 'Asking the Oracle' which will return Yes or No", "Make sure to explain the result in natural language."]},
+				{"type": "communication", "button": "N/A", "text": "If the credit is not missing (Oracle returns No) , then it is a problem in the Customer Interface", "subtext": ["Please tell them to log out and log back in again, or something similar.", "Assure the customer that their credit shows up on your side.", "Feel free to end the conversation."]},
+				{"type": "interaction", "button": "Promo Code", "text": " If the credit is missing (Oracle returns Yes):", "subtext": ["Ask for how much credit to add to the customer’s account.  If the customer does not know, the standard amount is $40.", "Enter in the amount and click [Promo Code]", "Send the generated promo code to the customer."]}
+			],
+			"instructions": ["Some credit is missing from the customer’s account.",
+							"Whether or not the conversation is successful depends on how happy you think the customer ended up. There is no right or wrong answer, just make your best judgement.  If nothing works, just apologize and end the conversation."]
+		}, 
+		"Manage Change Address": {"actions": [
+				{"type": "interaction", "button": "Pull up Account", "text": "Get Full Name or Account ID for [Pull up Account]", "subtext": []},
+				{"type": "interaction", "button": "Record Reason", "text": "If they are trying to change address on the account, they must be able to provide their current address.", "subtext": ["You only need the street address", "For example, if they live at '7221 Florshim Drive, San Carlos, CA 91207', then you only need the part of '7221 Florshim Drive'", "Enter this information into [Record Reason]"]},
+				{"type": "kb query", "button": "Verify Identity", "text": "Verify the identity of the customer.  They must provide 3 out of 7 of the items below which you you enter into [Verify Identity]", "subtext": ["Zip Code", "Telephone Number", "PIN Number", "Username", "Password", "Email Address", "Order ID of previous purchase"]},
+				{"type": "interaction", "button": "Update Account", "text": "Ask for the new, desired value.", "subtext": ["Again, you only need the street address > For example '7226 Florishim Drive'", "Enter this info and select [Update Account]", "Tell them everything has been updated in the system"]}
+			],
+			"instructions": ["The customer wants to manage their address.",
+							"Whether or not the conversation is successful depends on how happy you think the customer ended up. There is no right or wrong answer, just make your best judgement."]
+		}, 
+		"Manage Change Name": {"actions": [
+				{"type": "interaction", "button": "Pull up Account", "text": "Get Full Name or Account ID for [Pull up Account]", "subtext": []},
+				{"type": "interaction", "button": "Record Reason", "text": "If they are trying to change the name on the account, they must be able to provide their current full name.", "subtext": ["Get the current first and last name, such as 'George Constanza'", "Enter this information and click [Record Reason]"]},
+				{"type": "kb query", "button": "Verify Identity", "text": "Verify the identity of the customer.  They must provide 3 out of 7 of the items below which you you enter into [Verify Identity]", "subtext": ["Zip Code", "Telephone Number", "PIN Number", "Username", "Password", "Email Address", "Order ID of previous purchase"]},
+				{"type": "interaction", "button": "Update Account", "text": "Ask for the new, desired value.", "subtext": ["For example 'Jerry Seinfeld'", "Enter this info and select [Update Account]", "Tell them everything has been updated in the system"]}
+			],
+			"instructions": ["The customer wants to manage their name.",
+							"If nothing works, just apologize and end the conversation. Whether or not the conversation is successful depends on how happy you think the customer ended up. There is no right or wrong answer, just make your best judgement."]
+		},
+		"Manage Change Phone": {"actions": [
+				{"type": "interaction", "button": "Pull up Account", "text": "Get Full Name or Account ID for [Pull up Account]", "subtext": []},
+				{"type": "interaction", "button": "Record Reason", "text": "To change the phone number, they must be able to provide their current number.", "subtext": ["Format should be (XXX) XXX-XXXX", "Enter this information and click [Record Reason]"]},
+				{"type": "kb query", "button": "Verify Identity", "text": "Verify the identity of the customer.  They must provide 3 out of 7 of the items below which you you enter into [Verify Identity]", "subtext": ["Zip Code", "Telephone Number", "PIN Number", "Username", "Password", "Email Address", "Order ID of previous purchase"]},
+				{"type": "interaction", "button": "Update Account", "text": "Ask for the new, desired value. Format should be (XXX) XXX-XXXX", "subtext": ["Enter this info and select [Update Account]", "Tell them everything has been updated in the system"]}
+			],
+			"instructions": ["The customer wants to manage their phone number.",
+							"Whether or not the conversation is successful depends on how happy you think the customer ended up. There is no right or wrong answer, just make your best judgement. "]
+		},
+		"Manage Payment Method": {"actions": [
+				{"type": "interaction", "button": "Pull up Account", "text": "Get Full Name or Account ID for [Pull up Account]", "subtext": []},
+				{"type": "interaction", "button": "Record Reason", "text": "To change payment method, ask for their current payment method", "subtext": ["Options include ['credit card', 'debit card', 'paypal']", "Enter this information and click [Record Reason]"]},
+				{"type": "kb query", "button": "Verify Identity", "text": "Verify the identity of the customer.  They must provide 3 out of 7 of the items below which you you enter into [Verify Identity]", "subtext": ["Zip Code", "Telephone Number", "PIN Number", "Username", "Password", "Email Address", "Order ID of previous purchase"]},
+				{"type": "interaction", "button": "Update Account", "text": "Ask for the new, desired value.", "subtext": ["Options include ['credit card', 'debit card', 'paypal']", "Enter this info and select [Update Account]", "Tell them everything has been updated in the system"]}
+			],
+			"instructions": ["The customer wants to manage their payment method.",
+							"Whether or not the conversation is successful depends on how happy you think the customer ended up. There is no right or wrong answer, just make your best judgement. "]
+		}
+	}},
+"Purchase Dispute": {
+	"description": "bad price, out of stock, promo codes, billing",
+	"subflows": {
+		"Bad Price Competitor": {"actions": [
+				{"type": "interaction", "button": "Pull up Account", "text": "All chats in this flow start by asking the customer for their full name or Account ID with [Pull up account].", "subtext": ["This loads information in the background related to this user."]},
+				{"type": "interaction", "button": "Record Reason", "text": "Find out why they are disputing a purchase price", "subtext": ["Either 'competitor' or 'yesterday'", "Enter this into the input box and [Record Reason]"]},
+				{"type": "kb query", "button": "Verify Identity", "text": "Check if this is a valid order by gathering the following info, then [Verify Identity]", "subtext": ["Full name - may have gotten this earlier", "Account ID - may have gotten this earlier", "Order ID"]},
+				{"type": "communication", "button": "N/A", "text": "Try to convince the customer that sometimes the prices change, and that is outside of your control.", "subtext": ["For example, Our pricing algorithms will often dynamically change the price of an item."]},
+				{"type": "kb query", "button": "Promo Code", "text": "If they are still unhappy:", "subtext": ["If the customer keeps pushing, offer them a discount using [Promo Code]", "You do not need to enter any information.", "Generate the code and share that with them"]}
+			],
+			"instructions": ["The customer is calling in to call about a bad price.   The customer will give the reason the competitor has a better price.",
+							"Wrap up as usual."]
+		},
+		"Bad Price Yesterday": {"actions": [
+				{"type": "interaction", "button": "Pull up Account", "text": "All chats in this flow start by asking the customer for their full name or Account ID with [Pull up account].", "subtext": ["This loads information in the background related to this user."]},
+				{"type": "interaction", "button": "Record Reason", "text": "Find out why they are disputing a purchase price", "subtext": ["Either 'competitor' or 'yesterday'", "Enter this into the input box and [Record Reason]"]},
+				{"type": "kb query", "button": "Verify Identity", "text": "Check if this is a valid order by gathering the following info, then [Verify Identity]", "subtext": ["Full name - may have gotten this earlier", "Account ID - may have gotten this earlier", "Order ID"]},
+				{"type": "communication", "button": "N/A", "text": "Try to convince the customer that sometimes the prices change, and that is outside of your control.", "subtext": ["For example, Our pricing algorithms will often dynamically change the price of an item."]},
+				{"type": "kb query", "button": "Promo Code", "text": "If they are still unhappy:", "subtext": ["If the customer keeps pushing, offer them a discount using [Promo Code]", "You do not need to enter any information.", "Generate the code and share that with them"]}
+			],
+			"instructions": ["The customer is calling in to call about a bad price.   The customer will give the reason yesterday’s price was lower.",
+							"Wrap up as usual."]
+		},
+		"Out-of-Stock General": {"actions": [
+				{"type": "interaction", "button": "Pull up Account", "text": "Get Full Name or Account ID for [Pull up Account]", "subtext": []},
+				{"type": "interaction", "button": "Notify Internal Team", "text": "Let the customer know that you will write up a report and let the Purchasing Department know about this, so they can do a better job.", "subtext": ["Enter 'purchasing department' into the input box and [Notify Internal Team]"]},
+				{"type": "communication", "button": "N/A", "text": "Check if the customer is satisfied", "subtext": []},
+				{"type": "kb query", "button": "Promo Code", "text": "If they are still unhappy:", "subtext": ["If the customer keeps pushing, offer them a discount using [Promo Code]", "You do not need to enter any information.", "Generate the code and share that with them"]}
+			],
+			"instructions": ["The customer is calling in to call about items being out of stock",
+							"Explain what you did in natural language."]
+		},
+		"Out-of-Stock One Item": {"actions": [
+				{"type": "interaction", "button": "Pull up Account", "text": "Get Full Name or Account ID for [Pull up Account]", "subtext": []},
+				{"type": "interaction", "button": "Record Reason", "text": "Find out which item they are unhappy about", "subtext": ["Get the brand and type, such as 'Gap Sweater' or 'Uniqlo Socks'", "Enter this into the input box and [Record Reason]"]},
+				{"type": "interaction", "button": "Notify Internal Team", "text": "Let the customer know that you will write up a report and let the Purchasing Department know about this, so they can do a better job.", "subtext": ["Enter 'purchasing department' into the input box and [Notify Internal Team]"]},
+				{"type": "interaction", "button": "Make Purchase", "text": "If the customer is still not satisfied with the outcome, then offer to make the order for the customer", "subtext": ["Let the customer know that you can back-order the item for them.  The item will then ship immediately when it becomes available.", "To proceed, enter the brand and item, such as 'Express Jeans' or 'Banana Republic Shirt' into the input box", "Confirm that you should use the same credit card that is on file.", "Lastly, select [Make Purchase]"]}
+			],
+			"instructions": ["The customer is calling in to call about one particular item being out of stock.",
+							"Let the customer know that their order will arrive soon, and try to make them happy."]
+		},
+		"Promo Code Invalid": {"actions": [
+				{"type": "interaction", "button": "Pull up Account", "text": "Get Full Name or Account ID for [Pull up Account]", "subtext": []},
+				{"type": "communication", "button": "N/A", "text": "Typically promotions only last 7 days so check if the code was issued a long time ago.   That might be the reason it doesn’t work.", "subtext": ["If the promo code is more than 7 days, then the correct subflow is 'out of date', otherwise, the correct subflow is 'invalid'", "Both flows follow the same instructions below."]},
+				{"type": "kb query", "button": "Ask the Oracle", "text": "To decide whether or not this is a valid error:", "subtext": ["Tell the customer you will check your system about this problem.", "Then [Ask the Oracle] if the customer made an error, which will return Yes or No", "Make sure to explain the result in natural language.", "If the customer is right (Oracle says Yes), skip to the Promo Code step below"]},
+				{"type": "faq/policy", "button": "Membership Privileges", "text": "If the customer is wrong (Oracle says No), then:", "subtext": ["Ask the customer for their membership level.", "Enter the member level (even if just a Guest) into [Membership Privileges] and submit.", "Gold, Silver and Bronze all qualify. > The idea here is that even if their promo code is not valid for whatever reason, we will generate a new one for them because they are a valued member.", "Guest > If they are just a regular user, then apologize that you cannot help them because there is nothing you can do"]},
+				{"type": "interaction", "button": "Promo Code", "text": "Generate the promo code and share that with them", "subtext": ["No need to enter anything into the form.", "Click on [Promo Code]", "If the customer asks, you can say it is for 20% off their next purchase."]}
+			],
+			"instructions": ["The customer is complaining about a promo code that is considered invalid.  Keep this reason in mind later for filling out the survey.",
+							"Explain what you did in natural language."]
+		},
+		"Promo Code Out of Date": {"actions": [
+				{"type": "interaction", "button": "Pull up Account", "text": "Get Full Name or Account ID for [Pull up Account]", "subtext": []},
+				{"type": "communication", "button": "N/A", "text": "Typically promotions only last 7 days so check if the code was issued a long time ago.   That might be the reason it doesn’t work.", "subtext": ["If the promo code is more than 7 days, then the correct subflow is 'out of date', otherwise, the correct subflow is 'invalid'", "Both flows follow the same instructions below."]},
+				{"type": "kb query", "button": "Ask the Oracle", "text": "To decide whether or not this is a valid error:", "subtext": ["Tell the customer you will check your system about this problem.", "Then [Ask the Oracle] if the customer made an error, which will return Yes or No", "Make sure to explain the result in natural language.", "If the customer is right (Oracle says Yes), skip to the Promo Code step below"]},
+				{"type": "faq/policy", "button": "Membership Privileges", "text": "If the customer is wrong (Oracle says No), then:", "subtext": ["Ask the customer for their membership level.", "Enter the member level (even if just a Guest) into [Membership Privileges] and submit.", "Gold, Silver and Bronze all qualify. > The idea here is that even if their promo code is not valid for whatever reason, we will generate a new one for them because they are a valued member.", "Guest > If they are just a regular user, then apologize that you cannot help them because there is nothing you can do"]},
+				{"type": "interaction", "button": "Promo Code", "text": "Generate the promo code and share that with them", "subtext": ["No need to enter anything into the form.", "Click on [Promo Code]", "If the customer asks, you can say it is for 20% off their next purchase."]}
+			],
+			"instructions": ["The customer is complaining about a promo code that is considered out-of-date.  Keep this reason in mind later for filling out the survey.",
+							"Explain what you did in natural language."]
+		},
+		"Mistimed Billing Already Returned": {"actions": [
+				{"type": "interaction", "button": "Pull up Account", "text": "Get Full Name or Account ID for [Pull up Account]", "subtext": []},
+				{"type": "kb query", "button": "Validate Purchase", "text": "[Validate Purchase] to confirm that they have a valid order:", "subtext": ["Username - occasionally, the customer may not remember their username.  In this case, use the Recover Username subflow in the Account Access flow", "Email Address", "Order ID"]},
+				{"type": "interaction", "button": "Record Reason", "text": "Decide whether or not this is a valid error by checking the time frame.", "subtext": ["Ask how long the customer has waited for the refund to show up, in days", "Enter this amount in [Record Reason]", "If the customer is right (more than 7 days), skip to the Update Order step below"]},
+				{"type": "faq/policy", "button": "Membership Privileges", "text": "If it has not been long enough (less than 7 days), then:", "subtext": ["Ask the customer for their membership level and enter into [Membership Privileges]", "This only works for Gold members. > The company risks paying back the customer twice by issuing two refunds, but we do this anyway because we really value our Gold Members.", "For all other members > Unfortunately you cannot help them on this issue.  Do not update order."]},
+				{"type": "interaction", "button": "Update Order", "text": "If this is a company error or a Gold member, then start processing the credit.", "subtext": ["Type in 'give credit' into the field", "Then click on [Update Order]"]}
+			],
+			"instructions": ["The customer believes they have a problem on their bill.  They have already returned their item but have not received their credit.  If they want a refund, consider “Product Defect > Initiate Refund” instead.",
+							"Explain to the customer what you just did for them, and end the conversation."]
+		},
+		"Mistimed Billing Never Bought": {"actions": [
+				{"type": "interaction", "button": "Pull up Account", "text": "Get Full Name or Account ID for [Pull up Account]", "subtext": []},
+				{"type": "kb query", "button": "Validate Purchase", "text": "[Validate Purchase] to confirm that they have a valid order:", "subtext": ["Username - occasionally, the customer may not remember their username.  In this case, use the Recover Username subflow in the Account Access flow", "Email Address", "Order ID"]},
+				{"type": "kb query", "button": "Ask the Oracle", "text": "To decide whether or not this is a valid error:", "subtext": ["[Ask the Oracle] if the customer made an error, which will return Yes or No", "If the customer is right (Oracle says Yes), skip to the Update Order step below"]},
+				{"type": "faq/policy", "button": "Membership Privileges", "text": "If the customer is wrong (Oracle says No), then:", "subtext": ["Ask the customer for their membership level and enter into [Membership Privileges]", "This only works for Gold members. > Even if the system says that this is a customer error, we value our Gold members really highly so we will just give them the credit anyway. > If it is already returned, then the company risks paying back the customer twice. > If the customer never bought the item, the company risks refunding the customer even though the customer was never charged in the first place.", "For all other members > Unfortunately you cannot help them on this issue.  Do not update order."]},
+				{"type": "interaction", "button": "Update Order", "text": "If this is a company error or a Gold member, then start processing the credit.", "subtext": ["Type in 'give credit' into the field", "Then click on [Update Order]"]}
+			],
+			"instructions": ["The customer has a problem on their bill because they never bought anything in the first place.",
+							"Explain to the customer what you just did for them, and end the conversation."]
+		}
+	}},
+"Shipping Issue": {
+	"description": "check our update a shipment of an item",
+	"subflows": {
+		"Shipping Status": {"actions": [
+				{"type": "interaction", "button": "Pull up Account", "text": "All chats in this flow start by asking the customer for their full name or Account ID with [Pull up Account].", "subtext": ["This loads information in the background related to this user."]},
+				{"type": "kb query", "button": "Verify Identity", "text": "Start by looking up the order using the [Verify Identity] fields.", "subtext": ["Full name - may have gotten this earlier", "Account ID - may have gotten this earlier", "Order ID"]},
+				{"type": "kb query", "button": "Validate Purchase", "text": "To confirm that their purchase is valid with [Validate Purchase]:", "subtext": ["Username - occasionally, the customer may not remember their username.  In this case, use the Recover Username subflow in the Account Access flow", "Email Address", "Order ID"]},
+				{"type": "kb query", "button": "Ask the Oracle", "text": "Ask the Oracle", "subtext": ["The customer will ask some sort of of yes/no question, which you can query the Oracle to get the answer", "Explain the answer in natural language, and feel free to add any creative explanations or background."]},
+				{"type": "communication", "button": "N/A", "text": "If the Oracle says Yes, then you can confirm that the customer’s order looks as expected and the email was incorrect", "subtext": []},
+				{"type": "interaction", "button": "Update Order", "text": "If the Oracle says No, then the customer will not be happy. To resolve, enter how you will fix the problem", "subtext": ["Options include: 'change date', 'change address', 'change item', or 'change price'", "Enter into [Update Order]"]}
+			],
+			"instructions": ["The customer wants to check up on the status of their shipment because they received an email notification that seems to imply something wrong. The customer will ask some sort of yes/no question in these scenarios, which you will answer.",
+							"Explain what you did and ask if they need anything else."]
+		},
+		"Manage Shipping": {"actions": [
+				{"type": "interaction", "button": "Pull up Account", "text": "Get Full Name or Account ID for [Pull up Account]", "subtext": []},
+				{"type": "interaction", "button": "Shipping Status", "text": "Start by gathering the shipping status from the customer", "subtext": ["Options include: 'Order Received',  'In Transit', 'Out for Delivery', or 'Delivered'", "This should input using [Shipping Status]"]},
+				{"type": "kb query", "button": "Validate Purchase", "text": "To confirm that their purchase is valid with [Validate Purchase]:", "subtext": ["Username - occasionally, the customer may not remember their username.  In this case, use the Recover Username subflow in the Account Access flow", "Email Address", "Order ID"]},
+				{"type": "interaction", "button": "Update Order", "text": "Finally, perform the action for the customer by updating their order", "subtext": ["Enter the type of change they want to make: > Options: 'Change address' or 'Change order'", "Then click the [Update Order] button"]}
+			],
+			"instructions": ["The customer wants to change or update something about their shipment -- either changing address or change order because they ordered the wrong item.  If they want to cancel because the cost is too high, check the 'Shipping Cost' flow below.",
+							"The system will send a notification in the chat, but also assure the customer that their order has been updated.  As usual, end the conversation by asking if they need anything else and fill out the survey."]
+		},
+		"Missing Item": {"actions": [
+				{"type": "interaction", "button": "Pull up Account", "text": "Get Full Name or Account ID for [Pull up Account]", "subtext": []},
+				{"type": "kb query", "button": "Validate Purchase", "text": "To confirm that their purchase is valid with [Validate Purchase]:", "subtext": ["Username - occasionally, the customer may not remember their username.  In this case, use the Recover Username subflow in the Account Access flow", "Email Address", "Order ID"]},
+				{"type": "interaction", "button": "Record Reason", "text": "When shipping items, it can often take a couple days for the product to arrive", "subtext": ["Ask how long they have been waiting and enter the number of days into [Record Reason]"]},
+				{"type": "communication", "button": "N/A", "text": "If they have been waiting for less than a week (7 days or less), let the customer know that sometimes the package is mistakenly marked as delivered, but can still take a couple days to arrive", "subtext": []},
+				{"type": "interaction", "button": "Update Order", "text": "If the customer date has been waiting for a week or longer, let them know that you will ship a new order.", "subtext": ["To do this, you will need their address", "Enter the full address in one line and then click [Update Order]"]},
+				{"type": "interaction", "button": "Make Purchase", "text": "Finally resend the package", "subtext": ["Ask the customer for the brand and type of the product, such as 'Guess Jeans'", "Enter this value into the form", "Then click the [Make Purchase] button"]}
+			],
+			"instructions": ["The customer didn’t receive their item and wants to know what happened.",
+							"Wrap up as usual."]
+		},
+		"Shipping Cost": {"actions": [
+				{"type": "interaction", "button": "Pull up Account", "text": "Get Full Name or Account ID for [Pull up Account]", "subtext": []},
+				{"type": "kb query", "button": "Validate Purchase", "text": "Start by confirming that their purchase is valid with [Validate Purchase]:", "subtext": ["Username - occasionally, the customer may not remember their username.  In this case, use the Recover Username subflow in the Account Access flow", "Email Address", "Order ID"]},
+				{"type": "interaction", "button": "Shipping Status", "text": "Then, check to see status of their delivery", "subtext": ["Ask the customer for the shipping status", "Options include: 'Order Received',  'In Transit', 'Out for Delivery', or 'Delivered' ", "Record the status using [Shipping Status]"]},
+				{"type": "interaction", "button": "Update Order", "text": "If the status is 'Order Received' or  'In Transit', then offer to waive the fee on their shipment", "subtext": ["Enter 'waive fee' in the input form", "Click on [Update Order]", "Wrap up and end the conversation"]},
+				{"type": "interaction", "button": "Offer Refund", "text": "Alternatively, if the status is 'Out for Delivery' or 'Delivered', then the best you can do is to give them part of the shipping fee back.", "subtext": ["Standard shipping is $8.00, so enter '8' into the box", "Then click on [Offer Refund]"]}
+			],
+			"instructions": ["The cost of shipping is too high, so the customer wants to get the shipping fee waived or get a refund of the shipment cost.   If an 'order' is mentioned, 'shipping cost' is probably not the right flow.   If the customer does not want a refund and instead wants to delay delivery, it is likely Order Issue > Manage > Downgrade instead.",
+							"As always, fill out the survey afterwards."]
+		}
+	}},
+"Subscription Inquiry": {
+	"description": "billing and updates of the premium subscription service",
+	"subflows": {
+		"Status Active": {"actions": [
+				{"type": "interaction", "button": "Pull up Account", "text": "All chats in this flow start by asking the customer for their full name or Account ID with [Pull up account].", "subtext": ["This loads information in the background related to this user."]},
+				{"type": "kb query", "button": "Verify Identity", "text": "Start by looking up the order using the [Verify Identity] fields.", "subtext": ["Full name - may have gotten this earlier", "Account ID - may have gotten this earlier", "Order ID"]},
+				{"type": "kb query", "button": "Subscription Status", "text": "Find out the status by using [Subscription Status] action", "subtext": ["You do not need to enter anything into the form. Just click the button.", "This will return the general results, including whether or not the subscription is active or cancelled, as well as the due amount and the due date.", "If the status does not make sense (ie. bill due today but amount due of $0), feel free to adjust the values (i.e make it $20 instead) so the story is reasonable.", "You should then translate this into natural language to explain the details."]},
+				{"type": "interaction", "button": "Send Link", "text": "Provide a link to their account so they can look this up themselves in the future.", "subtext": ["This is accomplished with the [Send Link] button.  You can put 'account login' as the text.  Explain that this is the link for signing into their account.", "Make sure they know their own username.  Provide it to them if they don’t.  You can make up their username as the first letter of first name + last name + 1 > For example: Howard Chen → hchen1"]},
+				{"type": "communication", "button": "Enter Detail", "text": "Optional Step", "subtext": ["Especially if the subscription is not active or past due, the customer will want to pay the bill.  In this case, get the amount and input into [Enter Detail]."]}
+			],
+			"instructions": ["The customer is wondering if their payment went through so that their subscription is still active",
+							"Be sure to be courteous and ask if they need anything else before ending the conversation."]
+		},
+		"Status Due Amount": {"actions": [
+				{"type": "interaction", "button": "Pull up Account", "text": "All chats in this flow start by asking the customer for their full name or Account ID with [Pull up account].", "subtext": ["This loads information in the background related to this user."]},
+				{"type": "kb query", "button": "Verify Identity", "text": "Start by looking up the order using the [Verify Identity] fields.", "subtext": ["Full name - may have gotten this earlier", "Account ID - may have gotten this earlier", "Order ID"]},
+				{"type": "kb query", "button": "Subscription Status", "text": "Find out the status by using [Subscription Status] action", "subtext": ["You do not need to enter anything into the form. Just click the button.", "This will return the general results, including whether or not the subscription is active or cancelled, as well as the due amount and the due date.", "If the status does not make sense (ie. bill due today but amount due of $0), feel free to adjust the values (i.e make it $20 instead) so the story is reasonable.", "You should then translate this into natural language to explain the details."]},
+				{"type": "interaction", "button": "Send Link", "text": "Provide a link to their account so they can look this up themselves in the future.", "subtext": ["This is accomplished with the [Send Link] button.  You can put 'account login' as the text.  Explain that this is the link for signing into their account.", "Make sure they know their own username.  Provide it to them if they don’t.  You can make up their username as the first letter of first name + last name + 1 > For example: Howard Chen → hchen1"]},
+				{"type": "communication", "button": "Enter Detail", "text": "Optional Step", "subtext": ["Especially if the subscription is not active or past due, the customer will want to pay the bill.  In this case, get the amount and input into [Enter Detail]."]}
+			],
+			"instructions": ["The customer wants to know the amount due for their subscription.",
+							"Be sure to be courteous and ask if they need anything else before ending the conversation."]
+		},
+		"Status Due Date": {"actions": [
+				{"type": "interaction", "button": "Pull up Account", "text": "All chats in this flow start by asking the customer for their full name or Account ID with [Pull up account].", "subtext": ["This loads information in the background related to this user."]},
+				{"type": "kb query", "button": "Verify Identity", "text": "Start by looking up the order using the [Verify Identity] fields.", "subtext": ["Full name - may have gotten this earlier", "Account ID - may have gotten this earlier", "Order ID"]},
+				{"type": "kb query", "button": "Subscription Status", "text": "Find out the status by using [Subscription Status] action", "subtext": ["You do not need to enter anything into the form. Just click the button.", "This will return the general results, including whether or not the subscription is active or cancelled, as well as the due amount and the due date.", "If the status does not make sense (ie. bill due today but amount due of $0), feel free to adjust the values (i.e make it $20 instead) so the story is reasonable.", "You should then translate this into natural language to explain the details."]},
+				{"type": "interaction", "button": "Send Link", "text": "Provide a link to their account so they can look this up themselves in the future.", "subtext": ["This is accomplished with the [Send Link] button.  You can put 'account login' as the text.  Explain that this is the link for signing into their account.", "Make sure they know their own username.  Provide it to them if they don’t.  You can make up their username as the first letter of first name + last name + 1 > For example: Howard Chen → hchen1"]},
+				{"type": "communication", "button": "Enter Detail", "text": "Optional Step", "subtext": ["Especially if the subscription is not active or past due, the customer will want to pay the bill.  In this case, get the amount and input into [Enter Detail]."]}
+			],
+			"instructions": ["The customer wants to know the monthly renewal date for their subscription.",
+							"Be sure to be courteous and ask if they need anything else before ending the conversation."]
+		},
+		"Manage Pay Bill": {"actions": [
+				{"type": "interaction", "button": "Pull up Account", "text": "Get Full Name or Account ID for [Pull up Account]", "subtext": []},
+				{"type": "kb query", "button": "Verify Identity", "text": "Start by looking up the order using the [Verify Identity] fields.", "subtext": ["Full name - may have gotten this earlier", "Account ID - may have gotten this earlier", "Order ID"]},
+				{"type": "interaction", "button": "Enter Detail", "text": "The standard subscription is $99 a year.  Find out how much of this the customer wants to pay.", "subtext": ["If the customer does not know the amount, you can click go to KB Query > [Subscription Status] to generate a random amount due.  Explain to the customer that this is what they need to pay.", "If this value is $0, make it $99 instead so it makes sense.", "Once you have a number enter that value into [Enter Detail]"]},
+				{"type": "communication", "button": "N/A", "text": "Ask if the customer has a credit card number.  If they do not, tell them you will use the credit card on the account", "subtext": []},
+				{"type": "interaction", "button": "Update Account", "text": "Finalize their subscription payment", "subtext": ["Enter the value of 'renew subscription'", "Click the [Update Account] button"]}
+			],
+			"instructions": ["Customer wants to pay or renew their subscription",
+							"Act politely and ask if they need anything else before ending the conversation."]
+		},
+		"Manage Extension": {"actions": [
+				{"type": "interaction", "button": "Pull up Account", "text": "Get Full Name or Account ID for [Pull up Account]", "subtext": []},
+				{"type": "kb query", "button": "Verify Identity", "text": "Start by looking up the order using the [Verify Identity] fields.", "subtext": ["Full name - may have gotten this earlier", "Account ID - may have gotten this earlier", "Order ID"]},
+				{"type": "faq/policy", "button": "Membership Privileges", "text": "Whether or not they get an extension depends on the membership level", "subtext": ["Enter the member level (Gold, Silver, Bronze or Guest) into [Membership Privileges]", "Gold members can always get an extension", "Silver member get an extension if they are only 1 day late", "Bronze and Guest members cannot get an extension > For these, apologize that you cannot do anything for them."]},
+				{"type": "interaction", "button": "Update Account", "text": "(Option A) If they get an extension", "subtext": ["Enter 'extend subscription' into [Update Account]", "Then ask if they need anything else and wrap up the conversation"]},
+				{"type": "interaction", "button": "Enter Details", "text": "(Option B) If they do not get an extension and escalate to the manager", "subtext": ["Ask for their phone number so they have a number you can call them on", "Put the phone number into [Enter Details]", "Then let them know, the manager will call them back later", "Enter 'manager' into the [Notify Internal Team] action", "Finally, ask if they need anything else and end the conversation"]}
+			],
+			"instructions": ["Customer cannot pay for their premium subscription and wants to ask for an extension.",
+							"Wrap up as usual."]
+		},
+		"Manage Dispute Bill": {"actions": [
+				{"type": "interaction", "button": "Pull up Account", "text": "Get Full Name or Account ID for [Pull up Account]", "subtext": []},
+				{"type": "kb query", "button": "Verify Identity", "text": "Start by looking up the order using the [Verify Identity] fields.", "subtext": ["Full name - may have gotten this earlier", "Account ID - may have gotten this earlier", "Order ID"]},
+				{"type": "faq/policy", "button": "Membership Privileges", "text": "Whether or not they get an refund depends on the membership level", "subtext": ["Enter the member level (Gold, Silver, Bronze or Guest) into [Membership Privileges]", "Gold members can always get what they want ", "Silver member get a refund if the amount wrong is less than $10", "Bronze and Guest members depend on checking the system (see next step)"]},
+				{"type": "kb query", "button": "Ask the Oracle", "text": "If Bronze or Guest members, you need to [Ask the Oracle]", "subtext": ["If the Oracle says Yes, then they still get the refund", "If the Oracle says No, then the customer does not get the refund"]},
+				{"type": "interaction", "button": "Offer Refund", "text": "Find out how much the customer is asking for", "subtext": ["If they are supposed to be charged $50 and the bill was $60, then the refund amount should be $10", "Perhaps they are just complaining because the bill was high, but they haven’t actually paid it yet.  In this case, just apologize for the misunderstanding.", "However, perhaps they already paid the bill.  In this case, enter the correct amount (for example '10') and select [Offer Refund]"]}
+			],
+			"instructions": ["The customer thinks something is wrong with their subscription bill, such that they were billed twice.",
+							"Act politely and ask if they need anything else before ending the conversation."]
+		}
+	}},
+"Single-Item Query": {
+	"description": "FAQ questions about jeans, boots, shirt or sweater",
+	"subflows": {
+		"Boots FAQ": {"actions": [
+				{"type": "faq/policy", "button": "Search FAQ", "text": "When you realize that the customer is asking something that can be found in the FAQ, click the [Search FAQ] button", "subtext": ["This will swap out for a different view that has FAQ content", "If you made an error, just click [Hide FAQ] to switch back"]},
+				{"type": "faq/policy", "button": "Boots", "text": "Decide which article of clothing the customer is asking about:", "subtext": ["Possible options are Jeans, Shirt, Boots and Jacket", "Click the boots toggle switch", "This will record an action, so try to get this decision correct", "The flow diagram allows you to see all the questions at once."]},
+				{"type": "faq/policy", "button": "Select Answer", "text": "Read through the list of 8 options", "subtext": ["Select the correct answer for the customer’s question with [Select Answer]", "Remember the question your selected for the survey later"]},
+				{"type": "communication", "button": "N/A", "text": "The system created response does not include all the information, so make sure to explain the details in natural language.", "subtext": ["Do not copy/paste."]}
+			],
+			"instructions": ["The main effort is in figuring out which question the customer is asking",
+							"how remove a paint stain, how wide is the shoe, how to remove gum, how long to wear in, waterproof, what is the lace color, desired size not in stock, comes with warranty"]
+		},
+		"Shirt FAQ": {"actions": [
+				{"type": "faq/policy", "button": "Search FAQ", "text": "When you realize that the customer is asking something that can be found in the FAQ, click the [Search FAQ] button", "subtext": ["This will swap out for a different view that has FAQ content", "If you made an error, just click [Hide FAQ] to switch back"]},
+				{"type": "faq/policy", "button": "Shirt", "text": "Decide which article of clothing the customer is asking about:", "subtext": ["Possible options are Jeans, Shirt, Boots and Jacket", "Click the shirt toggle switch", "This will record an action, so try to get this decision correct", "The flow diagram allows you to see all the questions at once."]},
+				{"type": "faq/policy", "button": "Select Answer", "text": "Read through the list of 8 options", "subtext": ["Select the correct answer for the customer’s question with [Select Answer]", "Remember the question your selected for the survey later"]},
+				{"type": "communication", "button": "N/A", "text": "The system created response does not include all the information, so make sure to explain the details in natural language.", "subtext": ["Do not copy/paste."]}
+			],
+			"instructions": ["The main effort is in figuring out which question the customer is asking:",
+											"remove a stain from the shirt, how to wash the shirt, how long is the arm length, how wide is the collar, does this shirt shrink, has any small/medium/large in stock, buttons in brown or black, what material the shirt is made of"]
+		},
+		"Jeans FAQ": {"actions": [
+				{"type": "faq/policy", "button": "Search FAQ", "text": "When you realize that the customer is asking something that can be found in the FAQ, click the [Search FAQ] button", "subtext": ["This will swap out for a different view that has FAQ content", "If you made an error, just click [Hide FAQ] to switch back"]},
+				{"type": "faq/policy", "button": "Jeans", "text": "Decide which article of clothing the customer is asking about:", "subtext": ["Possible options are Jeans, Shirt, Boots and Jacket", "Click the jeans toggle switch", "This will record an action, so try to get this decision correct", "The flow diagram allows you to see all the questions at once."]},
+				{"type": "faq/policy", "button": "Select Answer", "text": "Read through the list of 8 options", "subtext": ["Select the correct answer for the customer’s question with [Select Answer]", "Remember the question your selected for the survey later"]},
+				{"type": "communication", "button": "N/A", "text": "The system created response does not include all the information, so make sure to explain the details in natural language.", "subtext": ["Do not copy/paste."]}
+			],
+			"instructions": ["The main effort is in figuring out which question the customer is asking:",
+											"how to remove a grass stain, how often does this need to be washed, how long is the leg length, cost to get it tailored, shrink after washing, dark blue or black color, any in a larger/smaller size, design with ripped holes in them"]
+		},
+		"Jacket FAQ": {"actions": [
+				{"type": "faq/policy", "button": "Search FAQ", "text": "When you realize that the customer is asking something that can be found in the FAQ, click the [Search FAQ] button", "subtext": ["This will swap out for a different view that has FAQ content", "If you made an error, just click [Hide FAQ] to switch back"]},
+				{"type": "faq/policy", "button": "Jacket", "text": "Decide which article of clothing the customer is asking about:", "subtext": ["Possible options are Jeans, Shirt, Boots and Jacket", "Click the jacket toggle switch", "This will record an action, so try to get this decision correct", "The flow diagram allows you to see all the questions at once."]},
+				{"type": "faq/policy", "button": "Select Answer", "text": "Read through the list of 8 options", "subtext": ["Select the correct answer for the customer’s question with [Select Answer]", "Remember the question your selected for the survey later"]},
+				{"type": "communication", "button": "N/A", "text": "The system created response does not include all the information, so make sure to explain the details in natural language.", "subtext": ["Do not copy/paste."]}
+			],
+			"instructions": ["The main effort is in figuring out which question the customer is asking:",
+											"how to remove a wine stain, washer or dry-clean only, how long is the arm length, how do you detach the hood, shrink after washing, if the store has any in stock, what material is this made of, is this warm enough to wear"]
+		}
+	}},
+"Storewide Query": {
+	"description": "FAQ questions about pricing, timing, membership or features",
+	"subflows": {
+		"Pricing FAQ": {"actions": [
+				{"type": "faq/policy", "button": "Search FAQ", "text": "When you realize that the customer is asking something that can be found in the FAQ, click the [Search FAQ] button", "subtext": ["This will swap out for a different view that has FAQ content", "If you made an error, just click [Hide FAQ] to switch back"]},
+				{"type": "faq/policy", "button": "Pricing", "text": "Decide which kind of question the customer is asking about:", "subtext": ["Possible options are Pricing, Timing, Membership and Policies", "Click the pricing toggle switch", "This will record an action, so try to get this decision correct.", "The flow diagram allows you to see all the questions at once."]},
+				{"type": "faq/policy", "button": "Select Answer", "text": "Read through the list of 4 options", "subtext": ["Click [Select Answer] for the correct answer to the customer’s question", "Remember the category for the survey later"]},
+				{"type": "communication", "button": "N/A", "text": "The automated system response does not include all the information, so make sure to explain the details in natural language.", "subtext": ["You should not copy/paste"]}
+			],
+			"instructions": ["The main effort is in figuring out which question the customer is asking:",
+											"Price of gift wrapping, Price of stitching your name, Price of overnight shipping, Does shopping cart qualify for free shipping"]
+		},
+		"Membership FAQ": {"actions": [
+				{"type": "faq/policy", "button": "Search FAQ", "text": "When you realize that the customer is asking something that can be found in the FAQ, click the [Search FAQ] button", "subtext": ["This will swap out for a different view that has FAQ content", "If you made an error, just click [Hide FAQ] to switch back"]},
+				{"type": "faq/policy", "button": "Membership", "text": "Decide which kind of question the customer is asking about:", "subtext": ["Possible options are Pricing, Timing, Membership and Policies", "Click the membership toggle switch", "This will record an action, so try to get this decision correct.", "The flow diagram allows you to see all the questions at once."]},
+				{"type": "faq/policy", "button": "Select Answer", "text": "Read through the list of 4 options", "subtext": ["Click [Select Answer] for the correct answer to the customer’s question", "Remember the category for the survey later"]},
+				{"type": "communication", "button": "N/A", "text": "The automated system response does not include all the information, so make sure to explain the details in natural language.", "subtext": ["You should not copy/paste"]}
+			],
+			"instructions": ["The main effort is in figuring out which question the customer is asking:",
+											"What are all the membership levels?, How does a customer qualify for premium membership?, What are some of the benefits of membership?, How long does membership last?"]
+		},
+		"Timing FAQ": {"actions": [
+				{"type": "faq/policy", "button": "Search FAQ", "text": "When you realize that the customer is asking something that can be found in the FAQ, click the [Search FAQ] button", "subtext": ["This will swap out for a different view that has FAQ content", "If you made an error, just click [Hide FAQ] to switch back"]},
+				{"type": "faq/policy", "button": "Timing", "text": "Decide which kind of question the customer is asking about:", "subtext": ["Possible options are Pricing, Timing, Membership and Policies", "Click the timing toggle switch", "This will record an action, so try to get this decision correct.", "The flow diagram allows you to see all the questions at once."]},
+				{"type": "faq/policy", "button": "Select Answer", "text": "Read through the list of 4 options", "subtext": ["Click [Select Answer] for the correct answer to the customer’s question", "Remember the category for the survey later"]},
+				{"type": "communication", "button": "N/A", "text": "The automated system response does not include all the information, so make sure to explain the details in natural language.", "subtext": ["You should not copy/paste"]}
+			],
+			"instructions": ["The main effort is in figuring out which question the customer is asking:",
+											"When does spring collection drop?, When does the local store open?, When does the annual sale begin?, When do the promo codes expire?"]
+		},
+		"Policy FAQ": {"actions": [
+				{"type": "faq/policy", "button": "Search FAQ", "text": "When you realize that the customer is asking something that can be found in the FAQ, click the [Search FAQ] button", "subtext": ["This will swap out for a different view that has FAQ content", "If you made an error, just click [Hide FAQ] to switch back"]},
+				{"type": "faq/policy", "button": "Policy", "text": "Decide which kind of question the customer is asking about:", "subtext": ["Possible options are Pricing, Timing, Membership and Policies", "Click the policy toggle switch", "This will record an action, so try to get this decision correct.", "The flow diagram allows you to see all the questions at once."]},
+				{"type": "faq/policy", "button": "Select Answer", "text": "Read through the list of 4 options", "subtext": ["Click [Select Answer] for the correct answer to the customer’s question", "Remember the category for the survey later"]},
+				{"type": "communication", "button": "N/A", "text": "The automated system response does not include all the information, so make sure to explain the details in natural language.", "subtext": ["You should not copy/paste"]}
+			],
+			"instructions": ["The main effort is in figuring out which question the customer is asking:",
+											"Canceling subscriptions, Late on a subscription payment, Refund policy, Return policy"]
+		}
+	}}
+}

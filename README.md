@@ -27,7 +27,7 @@ If running CDS for the first time, uncomment out the code within the run script 
 To specify the task for training, simply use the `--task` option with either `ast` or `cds`, for Action State Tracking and Cascading Dialogue Success respectively.  Options for different model types are `bert`, `albert` and `roberta`.  Loading scripts can be tuned to offer various other behaviors.
 
 ### Evaluation
-Activate evaluation using the `--do-eval` flag.  By default, `run.sh` will perform cascading evaluation.  To include ablations, add the appropriate options of `use-intent` or `use-kb`.
+Activate evaluation using the `--do-eval` flag.  By default, `run.sh` will perform cascading evaluation.  To include ablations, add the appropriate options of `--use-intent` or `--use-kb`.
 
 ## Data
 The preprocessed data is found in `abcd_v1.1.json` which is a dictionary with keys of `train`, `dev` and `test`.
@@ -49,7 +49,7 @@ Each scene dict contains details about the customer setup along with the underly
   - _Flow_ and _Subflow_: these represent the ground truth user intent.  They are used to generate the prompt, but are not shown directly the customer.  The job of the agent is to infer this (latent) intent and then match against the Agent Guidelines to resolve the customer issue.
 
 ### Guidelines
-The agent guidelines are offered in their original form within a Google Doc as listed in `guidelines.txt`.  This can be transformed into a formatted document for parsing by a model.  The intents with their button actions about found within `kb.json`.  Lastly, the breakdown of all flows, subflows, and actions are found within `ontology.json`.
+The agent guidelines are offered in their original form within [Agent Guidelines for ABCD](https://docs.google.com/document/d/1_SZit-iUAzNCICJ6qahULoMhqVOJCspQF37QiEJzHLc). This has been transformed into a formatted document for parsing by a model within `data/guidelines.json`.  The intents with their button actions about found within `kb.json`.  Lastly, the breakdown of all flows, subflows, and actions are found within `ontology.json`.
 
 ### Conversation
 Each conversation is made up of a list of turns.  Each turn is a dict with five parts:
