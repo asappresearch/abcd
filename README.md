@@ -79,10 +79,12 @@ Please email dchen@asapp.com for questions or feedback.
         Lin, Alex and
         Yu, Zhou",
     booktitle = "Proceedings of the 2021 Conference of the North American Chapter of the Association for 
-    	Computational Linguistics: Human Language Technologies, {NAACL-HLT} 2021, Mexico City, Mexico,
-    	June 6-11, 2021, Volume 1 (Long and Short Papers)",
+    	Computational Linguistics: Human Language Technologies, {NAACL-HLT} 2021",
+    month = jun,
     year = "2021",
+    address = "Online",
     publisher = "Association for Computational Linguistics",
-    url = "https://www.aclweb.org/anthology/2021.naacl-main.852",
+    url = "https://www.aclweb.org/anthology/2021.naacl-main.239",
+    pages = "3002--3017"
 }
 ```
