@@ -7,7 +7,13 @@ from typing import List, Optional, Dict, Any, Sequence, Union
 
 from typing import TypeVar
 from abc import ABC, abstractmethod
-from .feature_dataclasses import BaseFeature, ActionFeature, CascadeFeature, CompletionFeature
+from .feature_dataclasses import (
+    BaseFeature,
+    FeatureType,
+    ActionFeature,
+    CascadeFeature,
+    CompletionFeature,
+)
 from dataclasses import fields
 
 
@@ -28,7 +34,6 @@ class _BaseFeature(object):
         self.label_id = label_id
         self.position_id = position_ids
 
-FeatureType = TypeVar("FeatureType", bound=BaseFeature, covariant=True)
 
 class _ActionFeature(_BaseFeature):
     """ A single set of features with precomputed context token ids"""
@@ -74,7 +79,9 @@ class _CompletionFeature(_BaseFeature):
         self.utt_id = label_ids["utterance"]
 
 
-CompletionFeatureType = TypeVar("CompletionFeatureType", bound=CompletionFeature, covariant=True)
+CompletionFeatureType = TypeVar(
+    "CompletionFeatureType", bound=CompletionFeature, covariant=True
+)
 
 
 class _CascadeFeature(_CompletionFeature):
@@ -109,13 +116,15 @@ class BaseDataset(Dataset[FeatureType], ABC):
         return self.data[idx]
 
     @abstractmethod
-    def collate_func(self, features: Sequence[FeatureType]):
+    def collate_func(self, features: Sequence[FeatureType]) -> FeatureType:
         # def collate_func(self, args, split, raw_data):
         raise NotImplementedError()
 
 
 class ActionDataset(BaseDataset[ActionFeature]):
-    def collate_func(self, features: Sequence[ActionFeature]):
+    def collate_func(self, features: Sequence[ActionFeature]) -> ActionFeature:
+        return ActionFeature.stack(features)
+
         # input_ids = torch.tensor([f.input_id for f in features], dtype=torch.long)
         # segment_ids = torch.tensor([f.segment_id for f in features], dtype=torch.long)
         # mask_ids = torch.tensor([f.mask_id for f in features], dtype=torch.long)
@@ -130,11 +139,6 @@ class ActionDataset(BaseDataset[ActionFeature]):
         # )
         # action_ids = torch.tensor([f.action_id for f in features], dtype=torch.long)
         # value_ids = torch.tensor([f.label_id for f in features], dtype=torch.long)
-        kwargs = {
-            field.name: torch.tensor([getattr(feat, field.name) for feat in features], dtype=torch.long)
-            for field in fields(features[0])
-        }
-        return type(features[0])(**kwargs)
 
         # return ActionFeature(
         #     input_id=input_ids,
@@ -159,50 +163,54 @@ class ActionDataset(BaseDataset[ActionFeature]):
 
 
 class CompletionDataset(BaseDataset[CompletionFeatureType]):
-    def collate_func(self, features: Sequence[CompletionFeatureType]):
-        input_ids = torch.tensor([f.input_id for f in features], dtype=torch.long)
-        segment_ids = torch.tensor([f.segment_id for f in features], dtype=torch.long)
-        mask_ids = torch.tensor([f.mask_id for f in features], dtype=torch.long)
-        context_tokens = torch.tensor(
-            [f.context_token for f in features], dtype=torch.long
-        )
-        context_segments = torch.tensor(
-            [f.context_segment for f in features], dtype=torch.long
-        )
-        context_masks = torch.tensor(
-            [f.context_mask for f in features], dtype=torch.long
-        )
+    def collate_func(self, features: Sequence[CompletionFeatureType]) -> CompletionFeatureType:
+        return CompletionFeature.stack(features)
 
-        intent_ids = torch.tensor([f.intent_id for f in features], dtype=torch.long)
-        nextstep_ids = torch.tensor([f.nextstep_id for f in features], dtype=torch.long)
-        action_ids = torch.tensor([f.action_id for f in features], dtype=torch.long)
-        value_ids = torch.tensor([f.value_id for f in features], dtype=torch.long)
-        utterance_ids = torch.tensor([f.utt_id for f in features], dtype=torch.long)
-        all_candidates = torch.tensor(
-            [f.candidates for f in features], dtype=torch.long
-        )
+        # input_ids = torch.tensor([f.input_id for f in features], dtype=torch.long)
+        # segment_ids = torch.tensor([f.segment_id for f in features], dtype=torch.long)
+        # mask_ids = torch.tensor([f.mask_id for f in features], dtype=torch.long)
+        # context_tokens = torch.tensor(
+        #     [f.context_token for f in features], dtype=torch.long
+        # )
+        # context_segments = torch.tensor(
+        #     [f.context_segment for f in features], dtype=torch.long
+        # )
+        # context_masks = torch.tensor(
+        #     [f.context_mask for f in features], dtype=torch.long
+        # )
 
-        return (
-            input_ids,
-            segment_ids,
-            mask_ids,
-            context_tokens,
-            context_segments,
-            context_masks,
-            intent_ids,
-            nextstep_ids,
-            action_ids,
-            value_ids,
-            utterance_ids,
-            all_candidates,
-        )
+        # intent_ids = torch.tensor([f.intent_id for f in features], dtype=torch.long)
+        # nextstep_ids = torch.tensor([f.nextstep_id for f in features], dtype=torch.long)
+        # action_ids = torch.tensor([f.action_id for f in features], dtype=torch.long)
+        # value_ids = torch.tensor([f.value_id for f in features], dtype=torch.long)
+        # utterance_ids = torch.tensor([f.utt_id for f in features], dtype=torch.long)
+        # all_candidates = torch.tensor(
+        #     [f.candidates for f in features], dtype=torch.long
+        # )
+
+        # return (
+        #     input_ids,
+        #     segment_ids,
+        #     mask_ids,
+        #     context_tokens,
+        #     context_segments,
+        #     context_masks,
+        #     intent_ids,
+        #     nextstep_ids,
+        #     action_ids,
+        #     value_ids,
+        #     utterance_ids,
+        #     all_candidates,
+        # )
 
 
 class CascadeDataset(CompletionDataset[CascadeFeature]):
-    def collate_func(self, features: Sequence[CascadeFeature]):
-        collated_batch = super().collate_func(features)
-        convo_ids = torch.tensor([f.convo_id for f in features], dtype=torch.long)
-        turn_counts = torch.tensor([f.turn_count for f in features], dtype=torch.long)
-        cascade_batch = (convo_ids, turn_counts)
+    def collate_func(self, features: Sequence[CascadeFeature]) -> CascadeFeature:
+        return CascadeFeature.stack(features)
 
-        return collated_batch + cascade_batch
+        # collated_batch = super().collate_func(features)
+        # convo_ids = torch.tensor([f.convo_id for f in features], dtype=torch.long)
+        # turn_counts = torch.tensor([f.turn_count for f in features], dtype=torch.long)
+        # cascade_batch = (convo_ids, turn_counts)
+
+        # return collated_batch + cascade_batch
