@@ -4,7 +4,6 @@ import setuptools
 with open("README.md", "r") as fh:
     long_description = fh.read()
 packages = setuptools.find_namespace_packages(include=["abcd*"])
-# packages = ["packnet"]
 print("PACKAGES FOUND:", packages)
 print(sys.version_info)
 

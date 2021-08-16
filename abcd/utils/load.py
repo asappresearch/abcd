@@ -5,13 +5,17 @@ import random
 import math
 import torch
 import numpy as np
+from torch import nn
+from torch.optim.optimizer import Optimizer
+from typing import Union, List, Tuple
 
 from transformers import BertTokenizer, RobertaTokenizer, AlbertTokenizer
 from abcd.components.tools import RAdam, AdamW, get_linear_schedule_with_warmup
 from abcd.utils.arguments import Config
 from pathlib import Path
 
-def load_data(args: Config, already_cached: bool):
+
+def load_data(args: Config, already_cached: bool) -> List:
     if already_cached:
         return []  # no need to load raw_data since we already have a feature cache
     else:
@@ -26,7 +30,7 @@ def load_guidelines():
     return kb, ont
 
 
-def load_candidates(args):
+def load_candidates(args: Config):
     # The raw agent utterances that are used as candidates when performing utterance ranking
     utt_texts = json.load(open(f"{args.input_dir}/utterances.json", "r"))
     # Vectors already been embedded by BERT.  To embed in some other fashion, use the utt_texts instead
@@ -34,7 +38,7 @@ def load_candidates(args):
     return utt_texts, utt_vectors
 
 
-def load_tokenizer(args):
+def load_tokenizer(args: Config):
     ontology = json.load(open(f"{args.input_dir}/ontology.json", "r"))
     non_enumerable = ontology["values"]["non_enumerable"]
     special = [
@@ -52,7 +56,7 @@ def load_tokenizer(args):
     return tokenizer, ontology
 
 
-def get_optimizer(args, model, adam_epsilon=1e-8):
+def get_optimizer(args: Config, model: nn.Module, adam_epsilon=1e-8) -> Union[RAdam, AdamW]:
     no_decay = ["bias", "LayerNorm.weight"]
     grouped_parameters = [
         {
@@ -79,7 +83,7 @@ def get_optimizer(args, model, adam_epsilon=1e-8):
     return optimizer
 
 
-def get_scheduler(args, optimizer, training_steps, warmup_steps=0, warmup_ratio=0.06):
+def get_scheduler(args: Config, optimizer: Optimizer, training_steps: int, warmup_steps=0, warmup_ratio=0.06):
     if warmup_steps == 0:  # use the warmup ratio instead
         warmup_steps = math.ceil(training_steps * warmup_ratio)
     scheduler = get_linear_schedule_with_warmup(

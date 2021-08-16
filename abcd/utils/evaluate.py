@@ -10,9 +10,11 @@ from torch.utils.data import RandomSampler, SequentialSampler
 from torch.utils.data import DataLoader
 from collections import defaultdict, OrderedDict, Counter
 from sklearn.metrics import accuracy_score
-
+from typing import Union, List, Dict
+from torch import Tensor
 from abcd.components.systems import Application
 from abcd.utils.help import prepare_inputs
+from abcd.utils.arguments import Config
 from abcd.utils.load import load_guidelines
 
 
@@ -363,7 +365,7 @@ def qualify(args, ids, tokenizer, target_maps, scores, targets):
     pdb.set_trace()
 
 
-def quantify(args, predictions, labels, utils=None):
+def quantify(args: Config, predictions: List[Tensor], labels: List[Tensor], utils: Union[str, Dict]=None):
     assert len(predictions) == len(labels)
 
     if utils == "train" and not args.verbose:

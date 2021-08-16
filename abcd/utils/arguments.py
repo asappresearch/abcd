@@ -1,6 +1,8 @@
 from simple_parsing import ArgumentParser
 from simple_parsing.helpers import choice, field
 from dataclasses import dataclass
+import torch
+from typing import Optional
 
 
 @dataclass
@@ -86,6 +88,8 @@ class ParameterOptimizationConfig:
     batch_size: int = 50
     # Number of epochs or episodes to train
     epochs: int = field(default=14, alias="-e")
+    # Number of GPUs to use.
+    n_gpu: int = torch.cuda.device_count() if torch.cuda.is_available() else 0
 
 
 @dataclass

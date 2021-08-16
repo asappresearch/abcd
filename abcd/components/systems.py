@@ -3,10 +3,11 @@ import random
 import numpy as np
 import json
 import pandas as pd
+from abcd.utils.arguments import Config
 
 
 class Application(object):
-    def __init__(self, args, model, processor):
+    def __init__(self, args: Config, model, processor):
         self.task = args.task
         self.utt_vectors = model.utt_vectors
         self.utt_texts = model.utt_texts

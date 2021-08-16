@@ -17,7 +17,7 @@ from abcd.utils.load import (
 from abcd.utils.process import process_data, setup_dataloader
 from abcd.utils.evaluate import quantify, qualify
 
-from abcd.components.datasets import ActionDataset, CascadeDataset
+from abcd.components.datasets import ActionDataset, CascadeDataset, ActionFeature, CascadeFeature
 from abcd.components.tools import ExperienceLogger
 from abcd.components.models import ActionStateTracking, CascadeDialogSuccess
 
@@ -86,7 +86,12 @@ def cds_loss(scores, targets, loss_func):
     return total_loss
 
 
-def run_train(args, datasets, model, exp_logger, kb_labels):
+def run_train(
+    args: Config,
+    datasets: Dict[str, Union[ActionDataset, CascadeDataset]],
+    model: Union[ActionStateTracking, CascadeDialogSuccess],
+    exp_logger: ExperienceLogger,
+    kb_labels):
     dataloader, num_examples = setup_dataloader(
         datasets, args.batch_size, split="train"
     )
@@ -100,14 +105,19 @@ def run_train(args, datasets, model, exp_logger, kb_labels):
     for epoch in range(args.epochs):
         model.train()
 
+        batch: Union[ActionFeature, CascadeFeature]
         for step, batch in enumerate(dataloader):
-            batch = tuple(t.to(device) for t in batch)
+            # batch = tuple(t.to(device) for t in batch)
+            batch = batch.to(device)
 
             if args.task == "ast":
+                assert isinstance(batch, ActionFeature)
                 full_history, targets, context_tokens, _ = prepare_inputs(args, batch)
                 scores = model(full_history, context_tokens)
                 loss = ast_loss(scores, targets, loss_func)
             elif args.task == "cds":
+                assert isinstance(batch, CascadeFeature)
+
                 full_history, targets, context_tokens, tools = prepare_inputs(
                     args, batch
                 )
@@ -139,7 +149,12 @@ def run_train(args, datasets, model, exp_logger, kb_labels):
         exp_logger.log_dev(step + 1, res_name, dev_score)
 
 
-def run_eval(args, datasets, model, exp_logger, kb_labels, split="dev"):
+def run_eval(args: Config,
+             datasets: Dict[str, Union[ActionDataset, CascadeDataset]],         
+             model: Union[ActionStateTracking, CascadeDialogSuccess],
+             exp_logger: ExperienceLogger,
+             kb_labels,
+             split="dev"):
     dataloader, num_examples = setup_dataloader(datasets, args.batch_size, split)
     exp_logger.start_eval(num_examples, kind=args.filename)
     loss_func = torch.nn.CrossEntropyLoss(ignore_index=-1)
@@ -195,9 +210,8 @@ def run_eval(args, datasets, model, exp_logger, kb_labels, split="dev"):
     exp_logger.end_eval(metrics, kind=args.filename)
     return (metrics, res_name) if split == "dev" else metrics
 
-
-if __name__ == "__main__":
-    args = solicit_params()
+    
+def main(args: Config):
     args = setup_gpus(args)
     set_seed(args)
 
@@ -226,3 +240,8 @@ if __name__ == "__main__":
     model = model.to(device)
     model.encoder.resize_token_embeddings(len(tokenizer))
     run_main(args, datasets, model, exp_logger)
+
+
+if __name__ == "__main__":
+    args: Config = solicit_params()
+    main(args)

@@ -9,10 +9,23 @@ import datetime
 
 from tqdm import tqdm as progress_bar
 from torch.utils.data import DataLoader, RandomSampler, SequentialSampler
+from typing import Dict, Tuple, List, Union
+from abcd.components.feature_dataclasses import ActionFeature, CompletionFeature, CascadeFeature
+from abcd.components.datasets import (
+    # ActionFeature,
+    # CompletionFeature,
+    # CascadeFeature,
+    ActionDataset,
+    CascadeDataset,
+)
+from abcd.utils.arguments import Config
 
-from abcd.components.datasets import ActionFeature, CompletionFeature, CascadeFeature
 
-def setup_dataloader(datasets, batch_size, split):
+def setup_dataloader(
+    datasets: Dict[str, Union[ActionDataset, CascadeDataset]],
+    batch_size: int,
+    split: str,
+) -> Tuple[DataLoader, int]:
     dataset = datasets[split]
     num_examples = len(dataset)
     sampler = RandomSampler(dataset) if split == "train" else SequentialSampler(dataset)
@@ -24,7 +37,7 @@ def setup_dataloader(datasets, batch_size, split):
     return dataloader, num_examples
 
 
-def notify_feature_sizes(args, features):
+def notify_feature_sizes(args: Config, features: Dict):
     if args.verbose:
         for split, feats in features.items():
             print(f"{split}: {len(feats)} features")
@@ -61,7 +74,7 @@ def prepare_value_labels(ontology):
 
 
 class BaseProcessor(object):
-    def __init__(self, args, tokenizer, ontology):
+    def __init__(self, args: Config, tokenizer, ontology):
         self.task = args.task
         self.model_type = args.model_type
         self.use_intent = args.use_intent
@@ -72,7 +85,7 @@ class BaseProcessor(object):
         self.prepare_labels(args)
         self.prepare_special_tokens(args)
 
-    def prepare_labels(self, args):
+    def prepare_labels(self, args: Config):
         self.non_enumerable = self.ontology["values"]["non_enumerable"]
         self.enumerable = {}
         for category, values in self.ontology["values"]["enumerable"].items():
@@ -92,7 +105,7 @@ class BaseProcessor(object):
             for action, targets in actions.items():
                 self.value_by_action[action] = targets
 
-    def prepare_special_tokens(self, args):
+    def prepare_special_tokens(self, args: Config):
         special_tokens_count = 3 if args.model_type == "roberta" else 2
         # Account for [CLS] and [SEP] with "- 2" and with "- 3" for RoBERTa.
         effective_max = args.max_seq_len - special_tokens_count
@@ -110,7 +123,9 @@ class BaseProcessor(object):
             "maximum": [effective_max, args.max_seq_len],
         }
 
-    def value_to_id(self, context, action, value, potential_vals):
+    def value_to_id(
+        self, context, action, value, potential_vals
+    ) -> Tuple[int, List[str]]:
         # context is a list of utterances
         target_id = -1
         action_tokens = self.tokenizer.tokenize(action)
@@ -143,7 +158,7 @@ class BaseProcessor(object):
 
         return target_id, tokens
 
-    def build_features(self, args, raw_data):
+    def build_features(self, args: Config, raw_data):
         print("Build features method missing")
         raise NotImplementedError()
 
@@ -238,7 +253,7 @@ class BaseProcessor(object):
 
     def convert_example(
         self, dialog_history, target_ids, context_tokens, intent=None, candidates=None
-    ):
+    ) -> Union[ActionFeature, CascadeFeature]:
         sep_token = self.special["tokens"][1]
 
         texts = [
@@ -248,31 +263,28 @@ class BaseProcessor(object):
             texts = [f"{intent}|{text}" for text in texts]
         embedded, segments, mask = self.embed_utterance(f" {sep_token} ".join(texts))
 
+        embedded_context = self.convert_context_tokens(context_tokens)
         if self.task == "ast":
-            embedded_context = self.convert_context_tokens(context_tokens)
-            feature = ActionFeature(
+            return ActionFeature(
                 input_ids=embedded,
                 segment_ids=segments,
                 input_mask=mask,
                 label_ids=target_ids,
                 context=embedded_context,
             )
-        elif self.task == "cds":
-            embedded_context = self.convert_context_tokens(context_tokens)
-            feature = CascadeFeature(
-                input_ids=embedded,
-                segment_ids=segments,
-                input_mask=mask,
-                label_ids=target_ids,
-                context=embedded_context,
-                candidates=candidates,
-            )
-
-        return feature
+        assert self.task == "cds"
+        return CascadeFeature(
+            input_ids=embedded,
+            segment_ids=segments,
+            input_mask=mask,
+            label_ids=target_ids,
+            context=embedded_context,
+            candidates=candidates,
+        )
 
 
 class ASTProcessor(BaseProcessor):
-    def collect_one_example(self, context, action, value, potential_vals):
+    def collect_one_example(self, context, action: str, value, potential_vals):
         # actions that don't require any values
         if value == "not applicable":
             target_ids = {"action": self.action_to_id(action), "value": -1}
@@ -307,7 +319,7 @@ class ASTProcessor(BaseProcessor):
         else:
             self.collect_one_example(context, action, "not applicable", potential_vals)
 
-    def build_features(self, args, raw_data):
+    def build_features(self, args: Config, raw_data):
         features = {}
 
         for split, data in raw_data.items():
@@ -389,7 +401,7 @@ class CDSProcessor(BaseProcessor):
                 context, targets, ("not applicable", potential_vals, convo_id, turn_id)
             )
 
-    def build_features(self, args, raw_data):
+    def build_features(self, args: Config, raw_data) -> Dict:
         features = {}
 
         for split, data in raw_data.items():
@@ -437,9 +449,17 @@ class CDSProcessor(BaseProcessor):
         return features
 
 
-def process_data(args, tokenizer, ontology, raw_data, cache_path, from_cache):
-    # Takes in a pre-processed dataset and performs further operations:
-    # 1) Extract the labels 2) Embed the inputs 3) Store both into features 4) Cache the results
+def process_data(
+    args: Config, tokenizer, ontology, raw_data, cache_path, from_cache: bool
+) -> Tuple[Dict, Dict]:
+    """Takes in a pre-processed dataset and performs further operations:
+    
+    1) Extract the labels
+    2) Embed the inputs
+    3) Store both into features
+    4) Cache the results
+    """
+    processor: BaseProcessor
     if args.task == "ast":
         processor = ASTProcessor(args, tokenizer, ontology)
     elif args.task == "cds":

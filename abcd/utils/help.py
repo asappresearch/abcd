@@ -3,11 +3,13 @@ import random
 import math
 import torch
 import numpy as np
+from typing import Tuple, Any
+from abcd.utils.arguments import Config
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 
-def set_seed(args):
+def set_seed(args: Config):
     random.seed(args.seed)
     np.random.seed(args.seed)
     torch.manual_seed(args.seed)
@@ -15,11 +17,15 @@ def set_seed(args):
         torch.cuda.manual_seed_all(args.seed)
 
 
-def setup_gpus(args):
+def setup_gpus(args: Config) -> Config:
     n_gpu = 0  # set the default to 0
     if torch.cuda.is_available():
         n_gpu = torch.cuda.device_count()
-    args.n_gpu = n_gpu
+    # NOTE: Replacing this next line with the property on the Config dataclass:
+    # args.n_gpu = n_gpu
+    # Therefore we just check that the value would have been the same anyway.
+    assert args.n_gpu == n_gpu
+
     if n_gpu > 0:  # this is not an 'else' statement and cannot be combined
         torch.backends.cudnn.benchmark = False
         torch.backends.cudnn.deterministic = True
@@ -29,7 +35,7 @@ def setup_gpus(args):
     return args
 
 
-def check_cache(args, cache_dir):
+def check_cache(args: Config, cache_dir: str) -> Tuple[str, bool]:
     cache_filename = f"{args.model_type}_{args.task}"
     if args.cascade:
         cache_filename += "_cascade"
@@ -45,7 +51,7 @@ def check_cache(args, cache_dir):
         return cache_path, False
 
 
-def check_directories(args):
+def check_directories(args: Config):
     cache_dir = os.path.join(args.input_dir, "cache")
     checkpoint_folder = f"{args.prefix}_{args.filename}_{args.model_type}_{args.suffix}"
     ckpt_dir = os.path.join(args.output_dir, args.task, checkpoint_folder)
@@ -63,7 +69,7 @@ def check_directories(args):
     return ckpt_dir, cache_results
 
 
-def prepare_inputs(args, batch, speaker_turn=False):
+def prepare_inputs(args: Config, batch, speaker_turn=False):
 
     if args.task == "ast":
         full_history = {
@@ -77,7 +83,7 @@ def prepare_inputs(args, batch, speaker_turn=False):
             "attention_mask": batch[5],
         }
         targets = [batch[6], batch[7]]  # actions and values
-        tools = device
+        tools: Any = device
     else:
         full_history = {
             "input_ids": batch[0],
