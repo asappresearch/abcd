@@ -2,10 +2,13 @@ import os, sys, pdb
 import random
 import numpy as np
 import torch
+from torch import nn
+from torch import Tensor
 from tqdm import tqdm as progress_bar
-from typing import Dict, Union
+from typing import Dict, Union, Tuple
 
 from abcd.utils.arguments import solicit_params, Config
+from abcd.utils.help import ModelInputDict, ASTTargetsTuple, CDSTargetsTuple
 from abcd.utils.help import set_seed, setup_gpus, check_directories, prepare_inputs, device
 from abcd.utils.load import (
     load_data,
@@ -45,7 +48,11 @@ def run_main(
         print("Test Results -", results)
 
 
-def ast_loss(scores, targets, loss_func):
+def ast_loss(
+    scores: Tuple[Tensor, Tensor],
+    targets: Tuple[Tensor, Tensor],
+    loss_func: nn.Module
+):
     action_score, value_score = scores
     action_target, value_target = targets
 
@@ -85,13 +92,36 @@ def cds_loss(scores, targets, loss_func):
     total_loss = intent_loss + nextstep_loss + action_loss + value_loss + utt_loss
     return total_loss
 
+from typing import overload
+
+@overload
+def run_train(
+    args: Config,
+    datasets: Dict[str, ActionDataset],
+    model: ActionStateTracking,
+    exp_logger: ExperienceLogger,
+    kb_labels: Dict
+    ):
+    ...
+
+
+@overload
+def run_train(
+    args: Config,
+    datasets: Dict[str, CascadeDataset],
+    model: CascadeDialogSuccess,
+    exp_logger: ExperienceLogger,
+    kb_labels: Dict
+    ):
+    ...
+
 
 def run_train(
     args: Config,
     datasets: Dict[str, Union[ActionDataset, CascadeDataset]],
     model: Union[ActionStateTracking, CascadeDialogSuccess],
     exp_logger: ExperienceLogger,
-    kb_labels):
+    kb_labels: Dict):
     dataloader, num_examples = setup_dataloader(
         datasets, args.batch_size, split="train"
     )
@@ -111,12 +141,16 @@ def run_train(
             batch = batch.to(device)
 
             if args.task == "ast":
+                # NOTE: This is only here to help narrow down the type hints.
                 assert isinstance(batch, ActionFeature)
+                assert isinstance(model, ActionStateTracking)
                 full_history, targets, context_tokens, _ = prepare_inputs(args, batch)
                 scores = model(full_history, context_tokens)
                 loss = ast_loss(scores, targets, loss_func)
+            
             elif args.task == "cds":
                 assert isinstance(batch, CascadeFeature)
+                assert isinstance(model, CascadeDialogSuccess)
 
                 full_history, targets, context_tokens, tools = prepare_inputs(
                     args, batch

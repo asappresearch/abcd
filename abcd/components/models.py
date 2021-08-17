@@ -13,6 +13,7 @@ from transformers import BertModel, RobertaModel, AlbertModel
 from transformers.file_utils import WEIGHTS_NAME
 
 from abcd.utils.arguments import Config
+from abcd.utils.help import ModelInputDict
 
 
 class CoreModel(nn.Module):
@@ -29,7 +30,7 @@ class CoreModel(nn.Module):
         self.checkpoint_dir = checkpoint_dir
         self.use_intent = args.use_intent
 
-    def forward(self):
+    def forward(self, full_history: ModelInputDict, context_tokens: ModelInputDict):
         raise NotImplementedError
 
     def save_pretrained(self, filepath=None):
@@ -84,7 +85,11 @@ class ActionStateTracking(CoreModel):
         self.softmax = nn.Softmax(dim=1)
         self.sigmoid = nn.Sigmoid()
 
-    def forward(self, full_history, context_tokens):
+    def forward(self, full_history: ModelInputDict, context_tokens: ModelInputDict):
+        # NOTE: (@lebrice):
+        # - Action depends ONLY on full history
+        # - value depends on BOTH the full_history and the context_tokens
+
         history_outputs = self.encoder(**full_history)
         pooled_history = history_outputs.pooler_output  # batch_size x 768
         action_score = self.softmax(self.action_projection(pooled_history))

@@ -76,8 +76,8 @@ class ActionFeature(BaseFeature):
     context_masks: List[int] = field(default_factory=list)  # = context["mask_ids"]
 
     label_ids: InitVar[Dict[str, int]] = {}
-    action_id: int = field(default=None)  # = label_ids["action"]
-    label_id: int = field(default=None)  # = label_ids["value"]
+    action_id: Optional[int] = field(default=None)  # = label_ids["action"]
+    label_id: Optional[int] = field(default=None)  # = label_ids["value"]
 
     def __post_init__(self, context: Dict, label_ids: Dict[str, int]):
         if context or label_ids:
@@ -103,11 +103,11 @@ class CompletionFeature(BaseFeature):
     context_segment: List[int] = field(default_factory=list)
     context_mask: List[int] = field(default_factory=list)
 
-    intent_id: Union[int, List[int]] = field(default_factory=list)
-    nextstep_id: Union[int, List[int]] = field(default_factory=list)
-    action_id: Union[int, List[int]] = field(default_factory=list)
-    value_id: Union[int, List[int]] = field(default_factory=list)
-    utt_id: Union[int, List[int]] = field(default_factory=list)
+    intent_id: Union[int, List[int]] = field(default_factory=list)  # type: ignore
+    nextstep_id: Union[int, List[int]] = field(default_factory=list)  # type: ignore
+    action_id: Union[int, List[int]] = field(default_factory=list)  # type: ignore
+    value_id: Union[int, List[int]] = field(default_factory=list)  # type: ignore
+    utt_id: Union[int, List[int]] = field(default_factory=list)  # type: ignore
 
     def __post_init__(self, context: Dict, label_ids: Dict):
         if context or label_ids:
@@ -125,9 +125,8 @@ class CompletionFeature(BaseFeature):
 @dataclass
 class CascadeFeature(CompletionFeature):
     """ A single set of completion features with precomputed context token ids"""
-
-    convo_id: Union[int, List[int]] = field(default_factory=list)
-    turn_count: Union[int, List[int]] = field(default_factory=list)
+    convo_id: Union[int, List[int]] = field(default_factory=list)  # type: ignore
+    turn_count: Union[int, List[int]] = field(default_factory=list)  # type: ignore
 
     def __post_init__(self, context: Dict, label_ids: Dict):
         super().__post_init__(context=context, label_ids=label_ids)

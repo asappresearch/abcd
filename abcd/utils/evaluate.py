@@ -1,20 +1,22 @@
-import os, sys, pdb
-import random
 import json
-import torch
-import numpy as np
+import os
+import pdb
+import random
+import sys
 import time as tm
-import pandas as pd
+from collections import Counter, OrderedDict, defaultdict
+from typing import Dict, List, Optional, Union
 
-from torch.utils.data import RandomSampler, SequentialSampler
-from torch.utils.data import DataLoader
-from collections import defaultdict, OrderedDict, Counter
+import numpy as np
+import pandas as pd
+import torch
 from sklearn.metrics import accuracy_score
-from typing import Union, List, Dict
 from torch import Tensor
+from torch.utils.data import DataLoader, RandomSampler, SequentialSampler
+
 from abcd.components.systems import Application
-from abcd.utils.help import prepare_inputs
 from abcd.utils.arguments import Config
+from abcd.utils.help import prepare_inputs
 from abcd.utils.load import load_guidelines
 
 
@@ -365,7 +367,12 @@ def qualify(args, ids, tokenizer, target_maps, scores, targets):
     pdb.set_trace()
 
 
-def quantify(args: Config, predictions: List[Tensor], labels: List[Tensor], utils: Union[str, Dict]=None):
+def quantify(
+    args: Config,
+    predictions: List[Tensor],
+    labels: List[Tensor],
+    utils: Union[str, Dict] = None,
+):
     assert len(predictions) == len(labels)
 
     if utils == "train" and not args.verbose:
@@ -379,9 +386,14 @@ def quantify(args: Config, predictions: List[Tensor], labels: List[Tensor], util
     elif args.task == "cds":
         predictions = [pred.detach().cpu().numpy() for pred in predictions]
         labels = [label.detach().cpu().numpy() for label in labels]
-        kb_labels = utils["kb_labels"] if args.use_kb else None
+        # kb_labels = utils["kb_labels"] if args.use_kb else None
+        kb_labels: Optional[dict] = None
+        if args.use_kb:
+            assert isinstance(utils, dict)
+            kb_labels = utils["kb_labels"]
 
         if args.cascade:
+            assert isinstance(utils, dict)
             ci_and_tc = utils["ci_and_tc"]
             result = cds_report(predictions, labels, ci_and_tc, kb_labels)
             report, res_name = result

@@ -3,7 +3,7 @@ import logging
 import numpy as np
 
 from tensorboardX import SummaryWriter
-from torch.optim.optimizer import Optimizer, required
+from torch.optim.optimizer import Optimizer
 from transformers import AdamW, get_linear_schedule_with_warmup
 
 

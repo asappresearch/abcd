@@ -105,14 +105,14 @@ class _CascadeFeature(_CompletionFeature):
 
 class BaseDataset(Dataset[FeatureType], ABC):
     def __init__(self, args: Config, features: List[FeatureType]):
-        self.data = features
+        self.data: List[FeatureType] = features
         self.model_type = args.model_type
         self.num_examples = len(features)
 
     def __len__(self) -> int:
         return len(self.data)
 
-    def __getitem__(self, idx) -> FeatureType:
+    def __getitem__(self, idx: int) -> FeatureType:
         return self.data[idx]
 
     @abstractmethod

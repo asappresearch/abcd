@@ -6,11 +6,18 @@ import torch
 import numpy as np
 import pandas as pd
 import datetime
-
+from typing import Optional, List, Tuple, Generic, TypeVar, Any
+from abc import ABC, abstractmethod
+from abcd.components.feature_dataclasses import BaseFeature
+from abcd.utils.objects import Conversation, Scenario, Turn, RawData, Targets, Ontology
 from tqdm import tqdm as progress_bar
 from torch.utils.data import DataLoader, RandomSampler, SequentialSampler
 from typing import Dict, Tuple, List, Union
-from abcd.components.feature_dataclasses import ActionFeature, CompletionFeature, CascadeFeature
+from abcd.components.feature_dataclasses import (
+    ActionFeature,
+    CompletionFeature,
+    CascadeFeature,
+)
 from abcd.components.datasets import (
     # ActionFeature,
     # CompletionFeature,
@@ -43,7 +50,7 @@ def notify_feature_sizes(args: Config, features: Dict):
             print(f"{split}: {len(feats)} features")
 
 
-def prepare_action_labels(ontology):
+def prepare_action_labels(ontology: Ontology):
     action_list = []
     for section, buttons in ontology["actions"].items():
         actions = buttons.keys()
@@ -51,19 +58,19 @@ def prepare_action_labels(ontology):
     return {action: idx for idx, action in enumerate(action_list)}
 
 
-def prepare_intent_labels(ontology):
+def prepare_intent_labels(ontology: Ontology):
     intent_list = []
     for flow, subflows in ontology["intents"]["subflows"].items():
         intent_list.extend(subflows)
     return {intent: idx for idx, intent in enumerate(intent_list)}
 
 
-def prepare_nextstep_labels(ontology):
+def prepare_nextstep_labels(ontology: Ontology):
     nextstep_list = ontology["next_steps"]
     return {nextstep: idx for idx, nextstep in enumerate(nextstep_list)}
 
 
-def prepare_value_labels(ontology):
+def prepare_value_labels(ontology: Ontology):
     value_list = []
     for category, values in ontology["values"]["enumerable"].items():
         # value_list.extend(values)
@@ -73,7 +80,10 @@ def prepare_value_labels(ontology):
     return {slotval: idx for idx, slotval in enumerate(value_list)}
 
 
-class BaseProcessor(object):
+FeatureType = TypeVar("FeatureType", bound=BaseFeature, covariant=True)
+
+
+class BaseProcessor(ABC, Generic[FeatureType]):
     def __init__(self, args: Config, tokenizer, ontology):
         self.task = args.task
         self.model_type = args.model_type
@@ -84,6 +94,18 @@ class BaseProcessor(object):
 
         self.prepare_labels(args)
         self.prepare_special_tokens(args)
+
+    @abstractmethod
+    def build_features(
+        self, args: Config, raw_data: Dict[str, List[Conversation]]
+    ) -> Dict[str, List[FeatureType]]:
+        """Build a list of Feature objects from the list of conversations for each
+        split.
+        
+        NOTE: This 'Conversation' object is just a typed dict. The actual object is just
+        a dict.
+        """
+        raise NotImplementedError()
 
     def prepare_labels(self, args: Config):
         self.non_enumerable = self.ontology["values"]["non_enumerable"]
@@ -157,10 +179,6 @@ class BaseProcessor(object):
                 break  # we found our guy, so let's move on
 
         return target_id, tokens
-
-    def build_features(self, args: Config, raw_data):
-        print("Build features method missing")
-        raise NotImplementedError()
 
     def embed_utterance(self, text):
         cls_token, sep_token, pad_token = self.special["tokens"]
@@ -252,7 +270,12 @@ class BaseProcessor(object):
         return self.mappers["action"][action]
 
     def convert_example(
-        self, dialog_history, target_ids, context_tokens, intent=None, candidates=None
+        self,
+        dialog_history: List[str],
+        target_ids: Dict[str, Any],
+        context_tokens: List,
+        intent: Optional[str] = None,
+        candidates: List = None,
     ) -> Union[ActionFeature, CascadeFeature]:
         sep_token = self.special["tokens"][1]
 
@@ -283,7 +306,7 @@ class BaseProcessor(object):
         )
 
 
-class ASTProcessor(BaseProcessor):
+class ASTProcessor(BaseProcessor[ActionFeature]):
     def collect_one_example(self, context, action: str, value, potential_vals):
         # actions that don't require any values
         if value == "not applicable":
@@ -301,7 +324,7 @@ class ASTProcessor(BaseProcessor):
                 feature = self.convert_example(context, target_ids, context_tokens)
                 self.split_feats.append(feature)
 
-    def collect_examples(self, context, action, values):
+    def collect_examples(self, context: List[str], action: str, values: List[str]):
         potential_vals = self.value_by_action[action]
         # just skip if action does not require value inputs
         if len(potential_vals) > 0:
@@ -319,26 +342,69 @@ class ASTProcessor(BaseProcessor):
         else:
             self.collect_one_example(context, action, "not applicable", potential_vals)
 
-    def build_features(self, args: Config, raw_data):
+    def build_features(
+        self, args: Config, raw_data: Dict[str, List[Conversation]]
+    ) -> Dict[str, List[ActionFeature]]:
         features = {}
 
         for split, data in raw_data.items():
-            self.split_feats = []
+            self.split_feats: List[BaseFeature] = []
             print(f"Building features for {split}")
 
-            for convo in progress_bar(data, total=len(data)):
-                so_far = []
+            # TODO: (See below)
+            # flows = []
+            # subflows = []
 
-                for turn in convo["delexed"]:
+            convo: Conversation
+            for convo in progress_bar(data, total=len(data)):
+                so_far: List[str] = []
+                # BUG: TypedDict are buggy with mypy? these type hints shouldn't be
+                # necessary:
+                scenario: Scenario = convo["scenario"]
+                flow: str = scenario["flow"]
+                subflow: str = scenario["subflow"]
+                # print(f"Flow: {flow}")
+                # print(f"Subflow: {subflow}")
+
+                # TODO: Figure out if we need to save this 'flow/subflow' field
+                # somewhere inside the Features, and if so, what the best way of doing
+                # this would be.
+
+                # self._current_flow = flow
+                # self._current_subflow = subflow
+                # flows.append(flow)
+                # subflow.append(subflow)
+
+                turn: Turn
+                for i, turn in enumerate(convo["delexed"]):
                     speaker, utt = turn["speaker"], turn["text"]
-                    _, _, action, values, _ = turn["targets"]
+                    assert speaker in ["agent", "customer", "action"]
+                    subflow_name = turn["targets"][0]
+                    # print(f"Subflow name in the turn: {subflow_name}, equal to subflow: {subflow_name == subflow}")
 
                     if speaker in ["agent", "customer"]:
+                        # print(f"{speaker} says: '{utt}'")
                         utt_str = f"{speaker}|{utt}"
                         so_far.append(utt_str)
-                    else:  # create a training example during every action
+                    else:
+                        assert speaker == "action"
+
+                        # create a training example during every action
+                        # _, _, action, values, _ = turn["targets"]
+                        # Use a NamedTuple for the targets:
+                        targets: Targets = turn["targets"]
+                        action = targets.action
+                        values = targets.values
+
+                        # FIXME: @lebrice Debugging: This first item in "targets" is
+                        # similar to the "subflow" of the "scenario" dict.
+                        # subflow_name, something, action, values, some_int = targets
+
+                        # print(f"Action: {action}, values: {values}")
+                        # print(f"(targets: {targets}")
+
                         context = so_far.copy()  # [::-1] to reverse
-                        self.collect_examples(context, action, values)
+                        self.collect_examples(context, targets.action, targets.values)
                         action_str = f"action|{action}"
                         so_far.append(action_str)
 
@@ -346,7 +412,7 @@ class ASTProcessor(BaseProcessor):
         return features
 
 
-class CDSProcessor(BaseProcessor):
+class CDSProcessor(BaseProcessor[CascadeFeature]):
     def collect_one_example(self, dialog_history, targets, support_items):
         intent, nextstep, action, _, utt_id = targets
         candidates = [-1] * 100
@@ -401,9 +467,11 @@ class CDSProcessor(BaseProcessor):
                 context, targets, ("not applicable", potential_vals, convo_id, turn_id)
             )
 
-    def build_features(self, args: Config, raw_data) -> Dict:
-        features = {}
-
+    def build_features(
+        self, args: Config, raw_data: RawData
+    ) -> Dict[str, CascadeFeature]:
+        features: Dict[str, List[BaseFeature]] = {}
+        assert False, raw_data.keys()
         for split, data in raw_data.items():
             self.split_feats = []
             print(f"Building features for {split}")
