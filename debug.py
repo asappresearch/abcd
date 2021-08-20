@@ -1,17 +1,7 @@
 import gym
-from textworld.gym.spaces import Word
-from transformers import AutoModelForCausalLM, AutoTokenizer
-import torch
-from english_words import english_words_set
-from transformers import T5Tokenizer
 from typing import Tuple, Any
-from transformers import GPT2TokenizerFast
-from transformers import BertPreTrainedModel
-from typing import Sequence, List, Union, Dict, Any, Optional, Set
-import numpy as np
-from torch import Tensor
+from typing import Any, Dict
 from transformers import Conversation
-import uuid
 import logging
 from transformers import pipeline
 from abcd.utils.sentence import Sentence, CustomConversation
