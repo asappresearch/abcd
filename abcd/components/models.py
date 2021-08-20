@@ -115,6 +115,17 @@ class ActionStateTracking(CoreModel):
 
         return action_score, value_score
 
+from typing import NamedTuple
+from torch import Tensor
+
+
+class CDSModelOutput(NamedTuple):
+    intent_scores: Tensor
+    nextstep_scores: Tensor
+    action_scores: Tensor
+    value_scores: Tensor
+    utt_scores: Tensor
+
 
 class CascadeDialogSuccess(CoreModel):
     """ Unlike the BaseModel, will output 5 predictions, one for each component """
@@ -146,7 +157,7 @@ class CascadeDialogSuccess(CoreModel):
         self.utt_texts = utt_texts
         self.utt_vectors = utt_vectors
 
-    def forward(self, full_history, context_tokens, tools):
+    def forward(self, full_history, context_tokens, tools) -> CDSModelOutput:
         if self.use_intent:
             all_candidates, device, _ = tools
         else:
@@ -197,4 +208,10 @@ class CascadeDialogSuccess(CoreModel):
         copy_score = (1 - gate) * copy_prob  # batch_size x 100
         value_score = torch.cat([enum_score, copy_score], dim=1)  # batch_size x 225
 
-        return intent_score, nextstep_score, action_score, value_score, utt_score
+        return CDSModelOutput(
+            intent_score=intent_score,
+            nextstep_score=nextstep_score,
+            action_score=action_score,
+            value_score=value_score,
+            utt_score=utt_score,
+        )
