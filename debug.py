@@ -19,30 +19,28 @@ logging.getLogger("transformers.generation_utils").setLevel(logging.ERROR)
 
 
 class DialogueEnv(gym.Env):
+    """ Gym environment that represents a conversation with a user (a LLM). """
     def __init__(self):
         super().__init__()
+        # NOTE: I was using these models before, until I found out about this
+        # `conversational` pipeline, which simplifies the code a lot.
         # self.tokenizer = AutoTokenizer.from_pretrained("microsoft/DialoGPT-medium")
         # self.model = AutoModelForCausalLM.from_pretrained("microsoft/DialoGPT-medium")
-        # self.text_generator = pipeline("text-generation")
         self.user_pipeline = pipeline("conversational")
         # TODO: Figure out the vocabulary of ABCD / or of the tokenizer itself.
-        # tokenizer_vocab = self.tokenizer.get_vocab()
         self.observation_space = Sentence(max_length=128)
         self.action_space = Sentence(max_length=10)
-        # self.observation_space = Word(max_length=128, vocab=english_words_set)
-        # self.action_space = Word(max_length=20, vocab=english_words_set)
         self._conversation: CustomConversation
-        self.conversation = Conversation()
-        self.prompt: str
-        self.prompt_ids: Tensor
-        self.chat_history: List[str] = []
-        self.chat_history_ids: Tensor
 
     def reset(
         self,
         agent_prompt: str = "Hello, How can I help you?",
-        user_prompt: str = "I'm having trouble with my laptop.",
+        user_prompt: str = None,
     ):
+        """ Start a new conversation, primed with the agent say `agent_prompt`, and the
+        user responding `user_prompt`.
+        When `user_prompt` is not given, it is generated from the language model.
+        """
         # TODO: Retrieve some kind of prompt to prime the LM from the ABCD dataset.
         # prompt = get_prompt_from_ABCD()
 
@@ -53,6 +51,7 @@ class DialogueEnv(gym.Env):
             self.conversation.append_response(user_prompt)
             self.conversation.mark_processed()
         else:
+            # Generate the first user response.
             self.conversation = self.user_pipeline(self.conversation)
 
         first_user_response = self.conversation.generated_responses[-1]
@@ -61,16 +60,13 @@ class DialogueEnv(gym.Env):
     def step(self, action: str) -> Tuple[str, Any, bool, Dict]:
         self.chat_history.append(action)
         self.conversation.add_user_input(action)
-        # TODO: At some point the language model keeps repeating the same thing over an
-        # over, not sure why exactly. Maybe it's always trying to recreate the whole
-        # conversation, and that's longer than the max_length of the generative model?
-        # IDEA: Truncate the conversation, hopefully that will help:
-        # self.conversation.past_user_inputs = self.conversation.past_user_inputs[-5:]
-        # self.conversation.generated_responses = self.conversation.generated_responses[-5:]
-
+        # TODO: This `max_length=10_000` argument is random, but it seems to help it
+        # not repeat itself.
         self.conversation = self.user_pipeline(self.conversation, max_length=10000)
 
         user_response: str = self.conversation.generated_responses[-1]
+        
+        # Assign a reward based on the user's response:
         reward: float = 0.0
         if any(v in user_response for v in ["Thanks", "Great!", "That works!"]):
             reward += 1
@@ -79,12 +75,12 @@ class DialogueEnv(gym.Env):
             for v in [
                 "I'm not sure what you mean",
                 "I don't understand",
-                "That's not helpful.",
+                "That's not helpful",
             ]
         ):
             reward -= 1
 
-        # Kill the conversation if:
+        # End the conversation if:
         # - the user doesn't respond
         # - the conversation ends peacefully
         # - the conversation derails too much.
