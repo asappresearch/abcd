@@ -2,6 +2,9 @@ outputs/
 scripts/
 data/cache/
 data/raw/
+abcd/data/cache/
+abcd/data/raw/
+
 results/
 
 .DS_Store

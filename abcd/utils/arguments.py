@@ -23,7 +23,7 @@ class BaseConfig:
 class DirectoryAndSavingConfig:
     """ ------ DIRECTORY AND SAVING -------- """
     output_dir: str = "outputs/"
-    input_dir: str = "data"
+    input_dir: str = "abcd/data"
     # distinguish the trial run, often a MM/DD date
     prefix: str = "0524"
     # name of the model if saving, or loading from saved

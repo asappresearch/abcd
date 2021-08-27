@@ -392,7 +392,7 @@ class ASTProcessor(BaseProcessor[ActionFeature]):
                         # create a training example during every action
                         # _, _, action, values, _ = turn["targets"]
                         # Use a NamedTuple for the targets:
-                        targets: Targets = turn["targets"]
+                        targets: Targets = Targets(*turn["targets"])
                         action = targets.action
                         values = targets.values
 
