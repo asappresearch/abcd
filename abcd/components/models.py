@@ -209,9 +209,9 @@ class CascadeDialogSuccess(CoreModel):
         value_score = torch.cat([enum_score, copy_score], dim=1)  # batch_size x 225
 
         return CDSModelOutput(
-            intent_score=intent_score,
-            nextstep_score=nextstep_score,
-            action_score=action_score,
-            value_score=value_score,
-            utt_score=utt_score,
+            intent_scores=intent_score,
+            nextstep_scores=nextstep_score,
+            action_scores=action_score,
+            value_scores=value_score,
+            utt_scores=utt_score,
         )
