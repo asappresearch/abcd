@@ -22,7 +22,7 @@ from abcd.utils.evaluate import quantify, qualify
 
 from abcd.components.datasets import ActionDataset, CascadeDataset, ActionFeature, CascadeFeature
 from abcd.components.tools import ExperienceLogger
-from abcd.components.models import ActionStateTracking, CascadeDialogSuccess
+from abcd.components.models import ActionStateTracking, CDSModelOutput, CascadeDialogSuccess
 
 
 def run_main(
@@ -63,7 +63,7 @@ def ast_loss(
     return total_loss
 
 
-def cds_loss(scores, targets, loss_func):
+def cds_loss(scores: CDSModelOutput, targets, loss_func):
     intent_scores, nextstep_scores, action_scores, value_scores, utt_scores = scores
     intent_target, nextstep_target, action_target, value_target, utt_target = targets
 
@@ -187,7 +187,7 @@ def run_eval(args: Config,
              datasets: Dict[str, Union[ActionDataset, CascadeDataset]],         
              model: Union[ActionStateTracking, CascadeDialogSuccess],
              exp_logger: ExperienceLogger,
-             kb_labels,
+             kb_labels: Dict,
              split="dev"):
     dataloader, num_examples = setup_dataloader(datasets, args.batch_size, split)
     exp_logger.start_eval(num_examples, kind=args.filename)

@@ -413,7 +413,7 @@ class ASTProcessor(BaseProcessor[ActionFeature]):
 
 
 class CDSProcessor(BaseProcessor[CascadeFeature]):
-    def collect_one_example(self, dialog_history, targets, support_items):
+    def collect_one_example(self, dialog_history, targets: Targets, support_items):
         intent, nextstep, action, _, utt_id = targets
         candidates = [-1] * 100
         context_tokens = []
