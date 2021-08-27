@@ -11,9 +11,9 @@ Paper link: https://arxiv.org/abs/2104.00783
 
 Blog link: https://www.asapp.com/blog/action-based-conversations-dataset/
 
-![Agent Dashboard](/data/images/agent_dashboard.png)
+![Agent Dashboard](/images/agent_dashboard.png)
 
-![Customer Site](/data/images/customer_site.png)
+![Customer Site](/images/customer_site.png)
 
 ## Usage
 All code is run by executing the corresponding command within the shell script `run.sh`, which will kick off the data preparation and training within `main.py`.  To use, first unzip the file found in `data/abcd_v1.1.json.gz` using the `gunzip` command (or similar).  Then comment or uncomment the appropriate lines in the shell script to get desired behavior. Finally, enter `sh run.sh` into the command line to get started.  Use the `--help` option of argparse for flag details or read through the file located within `utils/arguments.py`.

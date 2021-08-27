@@ -20,8 +20,8 @@ NextStep = Literal["retrieve_utterance", "take_action", "end_conversation"]
 
 
 class Targets(NamedTuple):
-    """NamedTuple for the 'targets' in an ABCD sample.
-    
+    """ Tuple of five items representing the subtask labels
+
     Examples:
     
     - When in an agent's turn:
@@ -50,24 +50,31 @@ class Targets(NamedTuple):
     ]
     ```
     """
-    # TODO: Not 100% sure that this is the subflow name, because it doesn't always match
-    # the `subflow` field of the Conversation. (e.g. 'timing4' vs 'timing'.)
+    #  Intent Classification (text) - 55 subflow options
     subflow_name: str
-    # The type of action being taken? Not 100% sure about this.
-    second_field: Optional[NextStep]
-    # The action that is taken.
+    # Nextstep Selection (text) - take_action, retrieve_utterance or end_conversation; 3 options
+    next_step: Optional[NextStep]
+    # Action Prediction (text) - the button clicked by the agent; 30 options
     action: Optional[str]
     # The values that are passed to the action.
+    # Value Filling (list) - the slot value(s) associated with the action above; 125 options
     values: List[str]
-    # TODO: Not sure what this number means either!
+    # Utterance Ranking (int) - target position within list of candidates; 100 options
     some_integer: int
 
 
 class Turn(TypedDict):
+    # Either "agent", "customer" or "action"
     speaker: Speaker
+    # The utterance of the agent/customer or the system generated response of the action
     text: str
+    # Integer representing the turn number, starting from 1
     turn_count: int
-    targets: List[Optional[Union[int, str]]]
+    #  Tuple of five items representing the subtask labels
+    targets: Targets
+    # List of utterance ids representing the pool of 100 candidates to choose from when ranking.
+    # The surface form text can be found in `utterances.json` where the utt_id is the index.
+    # Only applicable when the current turn is a "retrieve_utterance" step.
     candidates: List[int]
 
 
