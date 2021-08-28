@@ -3,15 +3,14 @@
 This doesn't have any runtime impact, it's just to make it easier to understand what 
 the data contains in code.
 """
-from dataclasses import dataclass, field
-from typing import List, Optional, Union, NamedTuple, Dict, Mapping
-from simple_parsing.helpers import JsonSerializable
+from typing import Dict, List, NamedTuple, Optional
 try:
     from typing import TypedDict, Literal
 except ImportError:
     from typing_extensions import TypedDict, Literal  # type: ignore
 
 
+Split = Literal["train", "dev", "test"]
 Speaker = Literal["customer", "agent", "action"]
 
 # NOTE: This is still a bit unclear, but the values for this second field appear to be
@@ -170,8 +169,5 @@ class Conversation(TypedDict):
     delexed: List[Turn]
 
 
-
-Split = Literal["train", "dev", "test"]
 # Could just use Dict[str, List[Conversation]] to be more general as well.
 RawData = Dict[Split, List[Conversation]]
-

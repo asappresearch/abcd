@@ -7,20 +7,31 @@ import torch
 import numpy as np
 from torch import nn
 from torch.optim.optimizer import Optimizer
-from typing import Union, List, Tuple
+from typing import Dict, Union, List, Tuple
 
 from transformers import BertTokenizer, RobertaTokenizer, AlbertTokenizer
 from abcd.components.tools import RAdam, AdamW, get_linear_schedule_with_warmup
 from abcd.utils.arguments import Config
 from pathlib import Path
+from abcd.utils.objects.data import Split, Conversation
 
 
-def load_data(args: Config, already_cached: bool) -> List:
+def load_data(args: Config, already_cached: bool) -> Dict[Split, List[Conversation]]:
     if already_cached:
-        return []  # no need to load raw_data since we already have a feature cache
+        return {}  # no need to load raw_data since we already have a feature cache
     else:
+        # doesnt exist!
         data_path = Path(args.input_dir) / f"abcd_v{args.version}.json"
-        raw_data = json.load(open(data_path, "r"))
+        if not data_path.exists():
+            gzip_file_path = data_path.with_suffix(".json.gz")
+            assert gzip_file_path.exists(), gzip_file_path
+            import gzip
+            # TODO: Could probably call something like `guzip` programmatically from python if the
+            # json file doesnt exist!
+            f = gzip.open(gzip_file_path, mode="r")
+        else:
+            f = open(data_path, "r")
+        raw_data: Dict[Split, List[Conversation]] = json.load(f)
         return raw_data
 
 

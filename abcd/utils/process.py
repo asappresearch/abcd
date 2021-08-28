@@ -471,7 +471,6 @@ class CDSProcessor(BaseProcessor[CascadeFeature]):
         self, args: Config, raw_data: RawData
     ) -> Dict[str, CascadeFeature]:
         features: Dict[str, List[BaseFeature]] = {}
-        assert False, raw_data.keys()
         for split, data in raw_data.items():
             self.split_feats = []
             print(f"Building features for {split}")
