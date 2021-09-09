@@ -11,9 +11,9 @@ Paper link: https://arxiv.org/abs/2104.00783
 
 Blog link: https://www.asapp.com/blog/action-based-conversations-dataset/
 
-![Agent Dashboard](/data/images/agent_dashboard.png)
+![Agent Dashboard](/images/agent_dashboard.png)
 
-![Customer Site](/data/images/customer_site.png)
+![Customer Site](/images/customer_site.png)
 
 ## Usage
 All code is run by executing the corresponding command within the shell script `run.sh`, which will kick off the data preparation and training within `main.py`.  To use, first unzip the file found in `data/abcd_v1.1.json.gz` using the `gunzip` command (or similar).  Then comment or uncomment the appropriate lines in the shell script to get desired behavior. Finally, enter `sh run.sh` into the command line to get started.  Use the `--help` option of argparse for flag details or read through the file located within `utils/arguments.py`.
@@ -49,7 +49,7 @@ Each scene dict contains details about the customer setup along with the underly
   - _Flow_ and _Subflow_: these represent the ground truth user intent.  They are used to generate the prompt, but are not shown directly the customer.  The job of the agent is to infer this (latent) intent and then match against the Agent Guidelines to resolve the customer issue.
 
 ### Guidelines
-The agent guidelines are offered in their original form within [Agent Guidelines for ABCD](https://docs.google.com/document/d/1_SZit-iUAzNCICJ6qahULoMhqVOJCspQF37QiEJzHLc). This has been transformed into a formatted document for parsing by a model within `data/guidelines.json`.  The intents with their button actions about found within `kb.json`.  Lastly, the breakdown of all flows, subflows, and actions are found within `ontology.json`.
+The agent guidelines are offered in their original form within [Agent Guidelines for ABCD](https://docs.google.com/document/d/1_SZit-iUAzNCICJ6qahULoMhqVOJCspQF37QiEJzHLc). This has been transformed into a formatted document for parsing by a model within `abcd/data/guidelines.json`.  The intents with their button actions about found within `kb.json`.  Lastly, the breakdown of all flows, subflows, and actions are found within `ontology.json`.
 
 ### Conversation
 Each conversation is made up of a list of turns.  Each turn is a dict with five parts:
