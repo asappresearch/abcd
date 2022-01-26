@@ -16,24 +16,24 @@ from utils.help import prepare_inputs
 from utils.load import load_guidelines
 
 def ast_report(predictions, labels):
-  action_preds, value_preds = predictions
-  action_labels, value_labels = labels
+  bslot_preds, value_preds = predictions
+  bslot_labels, value_labels = labels
 
-  size = len(action_preds)
+  size = len(bslot_preds)
   assert(size == len(value_labels))
 
-  top_action_preds = np.argmax(action_preds, axis=1)
-  action_match = action_labels == top_action_preds   # array of booleans
-  action_acc = sum(action_match) / float(size) 
+  top_bslot_preds = np.argmax(bslot_preds, axis=1)
+  bslot_match = bslot_labels == top_bslot_preds   # array of booleans
+  bslot_acc = sum(bslot_match) / float(size) 
 
   top_value_preds = np.argmax(value_preds, axis=1)
   value_match = value_labels == top_value_preds
   value_acc = sum(value_match) / float(size) 
 
-  joint_match = action_match & value_match
+  joint_match = bslot_match & value_match
   joint_acc = sum(joint_match) / float(size) 
 
-  full_result = {'Action_Accuracy': round(action_acc, 4),
+  full_result = {'Bslot_Accuracy': round(bslot_acc, 4),
           'Value_Accuracy': round(value_acc, 4),
           'Joint_Accuracy': round(joint_acc, 4),}
 
@@ -71,8 +71,8 @@ def ranking_report(predictions, labels, use_match=False):
 def cds_report(predictions, labels, ci_and_tc, kb_labels=None):
   """ Calculated in the form of cascaded evaluation
   where each agent example or utterance a scored example"""
-  intent_pred, nextstep_pred, action_pred, value_pred, utterance_rank = predictions
-  intent_label, nextstep_label, action_label, value_label, utterance_label = labels
+  intent_pred, nextstep_pred, bslot_pred, value_pred, utterance_rank = predictions
+  intent_label, nextstep_label, bslot_label, value_label, utterance_label = labels
   convo_ids = ci_and_tc[0].detach().cpu().numpy()
   turn_counts = ci_and_tc[1].detach().cpu().numpy()
 
@@ -104,16 +104,16 @@ def cds_report(predictions, labels, ci_and_tc, kb_labels=None):
       intent_mask = intent_mask_map[intent_name]
       intent_masks.append(intent_mask)
     # now, all non valid actions should go to zero
-    action_pred *= np.array(intent_masks)
+    bslot_pred *= np.array(intent_masks)
 
-  top_action_preds = np.argmax(action_pred, axis=1)
-  action_match = action_label == top_action_preds   # array of booleans
-  num_turns_include_action = sum(action_label >= 0)
-  action_acc = sum(action_match) / float(num_turns_include_action) 
+  top_bslot_preds = np.argmax(bslot_pred, axis=1)
+  bslot_match = bslot_label == top_bslot_preds   # array of booleans
+  num_turns_include_action = sum(bslot_label >= 0)
+  bslot_acc = sum(bslot_match) / float(num_turns_include_action) 
 
   if use_kb:
     action_masks = []
-    for top_action in top_action_preds:
+    for top_action in top_bslot_preds:
       action_name = action_list[top_action]
       # each action mask should be size of 223 long
       action_mask = action_mask_map[action_name]
@@ -126,7 +126,7 @@ def cds_report(predictions, labels, ci_and_tc, kb_labels=None):
   num_turns_include_value = sum(value_label >= 0)
   value_acc = sum(value_match) / float(num_turns_include_value) 
 
-  joint_match = action_match & value_match
+  joint_match = bslot_match & value_match
   joint_acc = sum(joint_match) / float(num_turns_include_action) 
 
   recall, utt_match = {}, []
@@ -204,7 +204,7 @@ def cds_report(predictions, labels, ci_and_tc, kb_labels=None):
 
   full_result = {'Intent_Accuracy': round(intent_acc, 4),
          'Nextstep_Accuracy': round(nextstep_acc, 4),
-           'Action_Accuracy': round(action_acc, 4),
+           'Action_Accuracy': round(bslot_acc, 4),
           'Value_Accuracy': round(value_acc, 4),
           'Joint_Accuracy': round(joint_acc, 4),
              'Recall_at_1': round(recall['1'], 4),
@@ -216,8 +216,8 @@ def cds_report(predictions, labels, ci_and_tc, kb_labels=None):
   return full_result, 'Cascading_Score'
 
 def task_completion_report(predictions, labels, kb_labels=None):
-  intent_pred, nextstep_pred, action_pred, value_pred, utterance_rank = predictions
-  intent_label, nextstep_label, action_label, value_label, utterance_label = labels
+  intent_pred, nextstep_pred, bslot_pred, value_pred, utterance_rank = predictions
+  intent_label, nextstep_label, bslot_label, value_label, utterance_label = labels
   num_turns = len(nextstep_pred)
 
   if kb_labels is None:
@@ -245,16 +245,16 @@ def task_completion_report(predictions, labels, kb_labels=None):
       intent_mask = intent_mask_map[intent_name]
       intent_masks.append(intent_mask)
     # now, all non valid actions should go to zero
-    action_pred *= np.array(intent_masks)
+    bslot_pred *= np.array(intent_masks)
 
-  top_action_preds = np.argmax(action_pred, axis=1)
-  action_match = action_label == top_action_preds   # array of booleans
-  num_turns_include_action = sum(action_label >= 0) 
-  action_acc = sum(action_match) / float(num_turns_include_action) 
+  top_bslot_preds = np.argmax(bslot_pred, axis=1)
+  bslot_match = bslot_label == top_bslot_preds   # array of booleans
+  num_turns_include_action = sum(bslot_label >= 0) 
+  bslot_acc = sum(bslot_match) / float(num_turns_include_action) 
 
   if use_kb:
     action_masks = []
-    for top_action in top_action_preds:
+    for top_action in top_bslot_preds:
       action_name = action_list[top_action]
       # each action mask should be size of 223 long
       action_mask = action_mask_map[action_name]
@@ -267,7 +267,7 @@ def task_completion_report(predictions, labels, kb_labels=None):
   num_turns_include_value = sum(value_label >= 0)
   value_acc = sum(value_match) / float(num_turns_include_value) 
 
-  joint_match = action_match & value_match
+  joint_match = bslot_match & value_match
   joint_acc = sum(joint_match) / float(num_turns_include_action) 
 
   recall, utt_match = ranking_report(utterance_rank, utterance_label, use_match=True)
@@ -275,7 +275,7 @@ def task_completion_report(predictions, labels, kb_labels=None):
   assert(num_turns == len(value_label))
   assert(len(intent_pred) == len(nextstep_label))
   assert(len(utt_match) == num_turns)    
-  assert(len(action_match) == len(top_value_preds))  
+  assert(len(bslot_match) == len(top_value_preds))  
 
   turn_correct = 0
   for turn in range(num_turns):
@@ -294,7 +294,7 @@ def task_completion_report(predictions, labels, kb_labels=None):
 
   full_result = {'Intent_Accuracy': round(intent_acc, 4),
          'Nextstep_Accuracy': round(nextstep_acc, 4),
-           'Action_Accuracy': round(action_acc, 4),
+           'Action_Accuracy': round(bslot_acc, 4),
           'Value_Accuracy': round(value_acc, 4),
           'Joint_Accuracy': round(joint_acc, 4),
              'Recall_at_1': round(recall['Recall_at_1'], 4),
@@ -306,13 +306,13 @@ def task_completion_report(predictions, labels, kb_labels=None):
 
 def qualify(args, ids, tokenizer, target_maps, scores, targets):
   history_ids, context_ids = ids
-  action_mapper, value_mapper = target_maps
+  bslot_mapper, value_mapper = target_maps
   num_values = len(value_mapper)
   pad_id = tokenizer.convert_tokens_to_ids(tokenizer.pad_token)
 
-  action_score, value_score = scores
-  action_target, value_target = targets
-  top_action_ids = np.argmax(action_score.detach().cpu().numpy(), axis=1)
+  bslot_score, value_score = scores
+  bslot_target, value_target = targets
+  top_bslot_ids = np.argmax(bslot_score.detach().cpu().numpy(), axis=1)
   top_value_ids = np.argmax(value_score.detach().cpu().numpy(), axis=1)
    
   for index, (history, context) in enumerate(zip(history_ids, context_ids)):
@@ -320,10 +320,10 @@ def qualify(args, ids, tokenizer, target_maps, scores, targets):
     history_tokens = tokenizer.convert_ids_to_tokens(stripped_history)
     history_symbols = ' '.join(history_tokens).replace(' ##', '')
     history_text = history_symbols.replace('Ġ', '').replace('</s>', '//').replace(' âĢ Ļ', '\'')
-    action_pred = action_mapper[top_action_ids[index]]
-    action_actual = action_mapper[action_target[index].cpu()]
+    bslot_pred = bslot_mapper[top_bslot_ids[index]]
+    bslot_actual = bslot_mapper[bslot_target[index].cpu()]
     
-    if args.filter and (action_pred == action_actual):
+    if args.filter and (bslot_pred == bslot_actual):
       print('--- Skipping since model is correct ---')
       continue
 
@@ -342,7 +342,7 @@ def qualify(args, ids, tokenizer, target_maps, scores, targets):
     else:
       value_actual = value_mapper[vtic]
     print(index, history_text)
-    print(f"Predicted Action: {action_pred}, Actual: {action_actual}")
+    print(f"Predicted Button-slot: {bslot_pred}, Actual: {bslot_actual}")
     print(f"Predicted Value: {value_pred}, Actual: {value_actual}")
 
   pdb.set_trace()  
